@@ -1,0 +1,164 @@
+.swagger-theme.swagger-scroll {
+  height: max(30rem, calc(100vh - 14rem));
+  overflow-y: auto;
+  border: var(--border-width-ui) solid var(--color-operational-border);
+  border-radius: var(--radius-hard);
+  background: white;
+  padding: 1rem 1.25rem;
+}
+.swagger-theme .swagger-ui,
+.swagger-theme .swagger-ui .info .title,
+.swagger-theme .swagger-ui .opblock-tag,
+.swagger-theme .swagger-ui .opblock .opblock-summary-description,
+.swagger-theme .swagger-ui .opblock .opblock-section-header h4,
+.swagger-theme .swagger-ui .tab li,
+.swagger-theme .swagger-ui table thead tr th,
+.swagger-theme .swagger-ui .parameter__name,
+.swagger-theme .swagger-ui .response-col_status,
+.swagger-theme .swagger-ui label,
+.swagger-theme .swagger-ui .btn,
+.swagger-theme .swagger-ui select,
+.swagger-theme .swagger-ui input,
+.swagger-theme .swagger-ui textarea {
+  font-family: var(--font-ui);
+  color: var(--color-operational-ink);
+}
+
+.swagger-theme .swagger-ui .info {
+  margin: 0 0 1.5rem;
+}
+.swagger-theme .swagger-ui .info .title {
+  font-weight: var(--font-weight-extra-bold);
+}
+.swagger-theme .swagger-ui .scheme-container {
+  background: transparent;
+  box-shadow: none;
+  padding: 0 0 1rem;
+}
+.swagger-theme .swagger-ui .servers > label select {
+  border-radius: var(--radius-soft);
+  border: var(--border-width-ui) solid var(--color-operational-border);
+  background: white;
+}
+.swagger-theme .swagger-ui .filter-container .operation-filter-input {
+  border-radius: var(--radius-full);
+  border: var(--border-width-ui) solid var(--color-input-outline);
+  background: var(--color-input-bg);
+  padding: 0.5rem 1rem;
+}
+.swagger-theme .swagger-ui .filter-container .operation-filter-input:focus-visible {
+  outline: 2px solid var(--color-orange);
+  outline-offset: 2px;
+}
+.swagger-theme .swagger-ui .opblock-tag {
+  border-bottom: var(--border-width-ui) solid var(--color-operational-border);
+  font-weight: var(--font-weight-bold);
+}
+.swagger-theme .swagger-ui .opblock-tag:hover {
+  background: var(--color-operational-hover);
+}
+.swagger-theme .swagger-ui .opblock {
+  border-radius: var(--radius-hard);
+  box-shadow: var(--shadow-surface);
+  background: white;
+}
+.swagger-theme .swagger-ui .opblock .opblock-summary-path {
+  font-weight: var(--font-weight-semi-bold);
+}
+.swagger-theme .swagger-ui .opblock .opblock-summary-method {
+  border-radius: var(--radius-small);
+  font-family: var(--font-ui);
+  font-weight: var(--font-weight-bold);
+}
+.swagger-theme .swagger-ui .opblock.opblock-get {
+  border-color: var(--color-feedback-info);
+  background: color-mix(in srgb, var(--color-feedback-info) 6%, white);
+}
+.swagger-theme .swagger-ui .opblock.opblock-get .opblock-summary-method {
+  background: var(--color-feedback-info);
+}
+.swagger-theme .swagger-ui .opblock.opblock-post {
+  border-color: var(--color-green);
+  background: color-mix(in srgb, var(--color-green) 6%, white);
+}
+.swagger-theme .swagger-ui .opblock.opblock-post .opblock-summary-method {
+  background: var(--color-green);
+}
+.swagger-theme .swagger-ui .opblock.opblock-put,
+.swagger-theme .swagger-ui .opblock.opblock-patch {
+  border-color: var(--color-orange);
+  background: color-mix(in srgb, var(--color-orange) 6%, white);
+}
+.swagger-theme .swagger-ui .opblock.opblock-put .opblock-summary-method,
+.swagger-theme .swagger-ui .opblock.opblock-patch .opblock-summary-method {
+  background: var(--color-orange);
+}
+.swagger-theme .swagger-ui .opblock.opblock-delete {
+  border-color: var(--color-feedback-error);
+  background: color-mix(in srgb, var(--color-feedback-error) 6%, white);
+}
+.swagger-theme .swagger-ui .opblock.opblock-delete .opblock-summary-method {
+  background: var(--color-feedback-error);
+}
+.swagger-theme .swagger-ui .btn {
+  border-radius: var(--radius-medium);
+  border: var(--border-width-ui) solid var(--color-operational-border);
+  background: white;
+  box-shadow: none;
+  font-weight: var(--font-weight-semi-bold);
+}
+.swagger-theme .swagger-ui .btn:hover {
+  background: var(--color-operational-hover);
+  box-shadow: none;
+}
+.swagger-theme .swagger-ui .btn.execute,
+.swagger-theme .swagger-ui .btn.try-out__btn.execute {
+  background: var(--color-orange);
+  border-color: var(--color-orange);
+  color: white;
+}
+.swagger-theme .swagger-ui .btn.execute:hover {
+  background: var(--color-orange-copper);
+  border-color: var(--color-orange-copper);
+}
+.swagger-theme .swagger-ui .btn.cancel {
+  border-color: var(--color-feedback-error);
+  color: var(--color-feedback-error);
+}
+.swagger-theme .swagger-ui .btn:focus-visible {
+  outline: 2px solid var(--color-operational-ink);
+  outline-offset: 2px;
+}
+.swagger-theme .swagger-ui input[type="text"],
+.swagger-theme .swagger-ui input[type="search"],
+.swagger-theme .swagger-ui input[type="password"],
+.swagger-theme .swagger-ui input[type="email"],
+.swagger-theme .swagger-ui textarea,
+.swagger-theme .swagger-ui select {
+  border-radius: var(--radius-soft);
+  border: var(--border-width-ui) solid var(--color-input-outline);
+  background: white;
+}
+.swagger-theme .swagger-ui input:focus-visible,
+.swagger-theme .swagger-ui textarea:focus-visible,
+.swagger-theme .swagger-ui select:focus-visible {
+  outline: 2px solid var(--color-orange);
+  outline-offset: 1px;
+}
+.swagger-theme .swagger-ui section.models {
+  border-radius: var(--radius-hard);
+  border: var(--border-width-ui) solid var(--color-operational-border);
+  background: white;
+}
+.swagger-theme .swagger-ui .responses-inner h4,
+.swagger-theme .swagger-ui .responses-inner h5 {
+  color: var(--color-operational-muted);
+}
+.swagger-theme .swagger-ui .highlight-code > .microlight,
+.swagger-theme .swagger-ui .microlight {
+  border-radius: var(--radius-medium);
+}
+.swagger-theme .swagger-ui a.nostyle,
+.swagger-theme .swagger-ui .info a {
+  color: var(--color-orange);
+}
