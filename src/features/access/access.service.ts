@@ -7,7 +7,6 @@ export interface Session {
   accessTokenExpiresAt: string;
   userId: string;
 }
-const key = "solaria.sandbox.session";
 const listeners = new Set<() => void>();
 let session: Session | null = null;
 let renewal: Promise<void> | null = null;
@@ -33,13 +32,6 @@ function valid(value: unknown): value is Session {
     )
   );
 }
-try {
-  const stored: unknown = JSON.parse(sessionStorage.getItem(key) || "null");
-  if (valid(stored)) session = stored;
-  else sessionStorage.removeItem(key);
-} catch {
-  sessionStorage.removeItem(key);
-}
 export const getSession = () => session;
 export const getSessionGeneration = () => generation;
 export function subscribe(listener: () => void) {
@@ -50,9 +42,7 @@ export function subscribe(listener: () => void) {
 }
 function update(value: Session | null) {
   session = value;
-  if (value) sessionStorage.setItem(key, JSON.stringify(value));
-  else sessionStorage.removeItem(key);
-  listeners.forEach((listener) => listener());
+  for (const listener of listeners) listener();
 }
 export function clearSession() {
   generation++;

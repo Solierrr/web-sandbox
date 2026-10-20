@@ -25,8 +25,7 @@ export default function DocsOverviewPage() {
   );
   const [query, setQuery] = useState("");
 
-  const load = useCallback((api: ApiDoc) => {
-    setStates((current) => ({ ...current, [api.id]: { status: "loading" } }));
+  const resolveSpec = useCallback((api: ApiDoc) => {
     loadSpec(api).then(
       (spec) =>
         setStates((current) => ({ ...current, [api.id]: { status: "ready", spec } })),
@@ -41,9 +40,13 @@ export default function DocsOverviewPage() {
         })),
     );
   }, []);
+  const load = useCallback((api: ApiDoc) => {
+    setStates((current) => ({ ...current, [api.id]: { status: "loading" } }));
+    resolveSpec(api);
+  }, [resolveSpec]);
   useEffect(() => {
-    apis.forEach(load);
-  }, [load]);
+    for (const api of apis) resolveSpec(api);
+  }, [resolveSpec]);
 
   const operations = useMemo(
     () =>
