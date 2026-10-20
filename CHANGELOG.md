@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/Solierrr/web-sandbox/compare/v0.2.0...v0.3.0) (2026-10-20)
+
+
+### Features
+
+* add qa sandbox portal with shared web components ([#8](https://github.com/Solierrr/web-sandbox/issues/8)) ([fbfccf7](https://github.com/Solierrr/web-sandbox/commit/fbfccf7a95f0c2b3b0078e2dcf875be82c405b53))
+
 ## [0.2.0](https://github.com/Solierrr/web-sandbox/compare/v0.1.0...v0.2.0) (2026-09-30)
 
 
