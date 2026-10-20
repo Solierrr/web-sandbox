@@ -6,9 +6,11 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   return (
     <Access
-      heading="Sandbox QA"
+      heading={"Que bom ter voc\u00ea por aqui"}
       helperText="Entre com sua conta de QA para testar os serviços do Solaria."
       submitLabel="Entrar no sandbox"
+      logoInteractive
+      logoWidth={7}
       compact
       busy={busy}
       error={error}
