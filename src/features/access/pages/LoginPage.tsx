@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { Access } from "@solaria.network/web-lib";
+import { Access, Surface, ToolbarAction } from "@solaria.network/web-lib";
 import { login } from "../access.service";
 export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   return (
     <Access
-      heading={"Que bom ter voc\u00ea por aqui"}
-      helperText="Entre com sua conta de QA para testar os serviços do Solaria."
+      heading="Portão de testes lógicos"
+      helperText="Faça login para continuar."
       submitLabel="Entrar no sandbox"
       logoInteractive
       logoWidth={7}
@@ -25,7 +25,7 @@ export default function LoginPage() {
         {
           name: "password",
           label: "Senha",
-          placeholder: "Sua senha de QA",
+          placeholder: "Sua senha",
           password: true,
           autoComplete: "current-password",
         },
@@ -38,7 +38,17 @@ export default function LoginPage() {
           .catch((failure: Error) => setError(failure.message))
           .finally(() => setBusy(false));
       }}
-      footer="Ambiente de QA. As operações executadas aqui podem alterar os dados de teste."
+      footer={
+        <Surface contentClassName="flex items-center justify-center gap-3 p-1">
+          <ToolbarAction
+            content="?"
+            label="Ajuda do sandbox"
+            to="https://github.com/Solierrr/web-sandbox#readme"
+            target="_blank"
+            rel="noopener noreferrer"
+          />
+        </Surface>
+      }
     />
   );
 }
