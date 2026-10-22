@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/Solierrr/web-sandbox/compare/v0.3.0...v0.4.0) (2026-10-22)
+
+
+### Features
+
+* add a mock authentication mode for local development ([830ecc2](https://github.com/Solierrr/web-sandbox/commit/830ecc23ef3b8a0b0453bad1dc39f4931e9e2bfc))
+* replace the service test screens with a filterable catalog and a keepalive screen ([4426e57](https://github.com/Solierrr/web-sandbox/commit/4426e5720b9502e9ca71072a94dd0c60597bb451))
+
+
+### Bug Fixes
+
+* restore the shared favicon ([bb86a11](https://github.com/Solierrr/web-sandbox/commit/bb86a11f294a5b4ffd55afbee692825dbcf8434d))
+
 ## [0.3.0](https://github.com/Solierrr/web-sandbox/compare/v0.2.0...v0.3.0) (2026-10-20)
 
 
