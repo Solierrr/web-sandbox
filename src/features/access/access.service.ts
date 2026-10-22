@@ -6,6 +6,21 @@ export interface Session {
   email: string;
   accessTokenExpiresAt: string;
   userId: string;
+  mock?: true;
+}
+const MOCK_SESSION_MS = 60 * 60 * 1000;
+const mockMode = () =>
+  import.meta.env.DEV && import.meta.env.VITE_MOCKS === "ALWAYS";
+function mockSession(email: string): Session {
+  const normalized = email.trim().toLowerCase();
+  return {
+    accessToken: `mock-access-${crypto.randomUUID()}`,
+    refreshToken: `mock-refresh-${crypto.randomUUID()}`,
+    email: normalized,
+    userId: `mock:${normalized}`,
+    accessTokenExpiresAt: new Date(Date.now() + MOCK_SESSION_MS).toISOString(),
+    mock: true,
+  };
 }
 const listeners = new Set<() => void>();
 let session: Session | null = null;
@@ -76,6 +91,11 @@ async function exchange(path: string, body: object) {
 }
 export async function login(email: string, password: string) {
   const initial = generation;
+  if (mockMode()) {
+    generation++;
+    update(mockSession(email));
+    return;
+  }
   const next = await exchange("/auth/login", { email, password });
   if (initial !== generation) return;
   generation++;
@@ -86,6 +106,10 @@ export async function refresh() {
     const current = session;
     renewal = (async () => {
       if (!current) throw new Error("Sua sessão terminou. Entre novamente.");
+      if (current.mock) {
+        update(mockSession(current.email));
+        return;
+      }
       try {
         const next = await exchange("/auth/refresh", {
           refreshToken: current.refreshToken,
@@ -104,7 +128,7 @@ export async function refresh() {
 export async function logout() {
   const current = session;
   clearSession();
-  if (current)
+  if (current && !current.mock)
     await fetch(`${authUrl.replace(/\/$/, "")}/auth/logout`, {
       method: "POST",
       headers: {
