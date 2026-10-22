@@ -11,8 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@solaria.network/web-lib": "file:vendor/solaria.network-web-lib-0.3.1.tgz",
-    "firebase": "^13.0.0",
+    "@solaria.network/web-lib": "file:vendor/solaria.network-web-lib-0.5.0.tgz",
     "i18next": "^26.4.2",
     "lucide-react": "^1.49.0",
     "react": "^19.3.0",
@@ -20,8 +19,7 @@
     "react-i18next": "^17.0.15",
     "react-icons": "^5.7.0",
     "react-router-dom": "^7.18.4",
-    "react-speech-recognition": "^4.0.1",
-    "swagger-ui-react": "5.33.0"
+    "react-speech-recognition": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -32,7 +30,6 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@types/react-speech-recognition": "^3.9.6",
-    "@types/swagger-ui-react": "5.18.0",
     "@vitejs/plugin-react": "^6.1.1",
     "eslint": "^10.10.0",
     "eslint-plugin-react-hooks": "^7.1.1",
