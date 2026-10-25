@@ -7,7 +7,7 @@ export default function LoginPage() {
   return (
     <Access
       heading="Portão lógico de processos"
-      helperText="Entre com uma conta de desenvolvimento para testar os serviços do domínio."
+      helperText="Entre com uma conta para testar os domínios do projeto."
       submitLabel="Entrar no sandbox"
       logoInteractive
       logoWidth={7}
