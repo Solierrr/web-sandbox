@@ -25,17 +25,11 @@ Com `VITE_MOCKS=ALWAYS` (padrão do `.env.example`) e só no `npm run dev`, o lo
 
 As telas de teste manual por serviço (API-core, API-messenger, serviços de IA e demais) foram removidas; o catálogo concentra os links de cada serviço. A sessão fica só em memória, com logout local imediato.
 
-## Biblioteca local
+## Biblioteca de componentes
 
-O tarball em `vendor` permite consumir as alterações locais da lib sem publicar nem depender de uma pasta irmã em `npm ci`. Para atualizar:
+`@solaria.network/web-lib` vem do npm, no intervalo `^0.5.0` (correções e novidades compatíveis da 0.5.x). O `package-lock.json` fixa a versão exata e o Dependabot abre as PRs de atualização.
 
-```sh
-cd ../web-lib
-npm run build
-npm pack --pack-destination ../web-sandbox/vendor
-cd ../web-sandbox
-npm install ./vendor/solaria.network-web-lib-0.5.0.tgz
-```
+Para testar uma alteração da lib antes de publicá-la, gere o tarball na lib (`npm run build` e `npm pack`) e instale-o localmente com `npm install ./caminho/solaria.network-web-lib-x.y.z.tgz`, sem commitar o tarball.
 
 ## Validação
 
