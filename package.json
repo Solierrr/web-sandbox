@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@solaria.network/web-lib": "file:vendor/solaria.network-web-lib-0.5.0.tgz",
+    "@thesvg/react": "^3.4.1",
     "i18next": "^26.4.2",
     "lucide-react": "^1.49.0",
     "react": "^19.3.0",

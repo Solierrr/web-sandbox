@@ -6,8 +6,8 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   return (
     <Access
-      heading={"Que bom ter voc\u00ea por aqui"}
-      helperText="Entre com sua conta de QA para testar os serviços do Solaria."
+      heading="Portão lógico de processos"
+      helperText="Entre com uma conta para testar os domínios do projeto."
       submitLabel="Entrar no sandbox"
       logoInteractive
       logoWidth={7}
@@ -18,14 +18,14 @@ export default function LoginPage() {
         {
           name: "email",
           label: "E-mail",
-          placeholder: "seu.email@exemplo.com",
+          placeholder: "Insira seu e-mail aqui",
           type: "email",
           autoComplete: "username",
         },
         {
           name: "password",
           label: "Senha",
-          placeholder: "Sua senha de QA",
+          placeholder: "Insira sua senha aqui",
           password: true,
           autoComplete: "current-password",
         },
@@ -38,7 +38,6 @@ export default function LoginPage() {
           .catch((failure: Error) => setError(failure.message))
           .finally(() => setBusy(false));
       }}
-      footer="Ambiente de QA. As operações executadas aqui podem alterar os dados de teste."
     />
   );
 }

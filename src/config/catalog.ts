@@ -18,6 +18,8 @@ export interface CatalogEntry {
   prod?: string;
   swaggerPath?: string;
   qaLabel?: string;
+  gallery?: string;
+  interfaces?: { kind: "swagger" | "mailpit"; qa?: string; prod?: string }[];
 }
 
 export interface FilterOption {
@@ -151,6 +153,11 @@ function toEntry(repo: (typeof repositories)[number]): CatalogEntry {
     prod: deployed ? prodUrl(id) : undefined,
     swaggerPath: frameworks.includes("spring") ? SPRING_DOCS : frameworks.includes("fastapi") ? FASTAPI_DOCS : undefined,
     qaLabel: id === "web-sandbox" ? "Sandbox" : undefined,
+    gallery: id === "api-email" ? externalUrl(env.VITE_EMAIL_GALLERY || "https://solierrr.github.io/api-email/") : undefined,
+    interfaces: id === "api-email" ? [
+      { kind: "swagger", qa: externalUrl(env.VITE_QA_API_EMAIL_SWAGGER || ""), prod: externalUrl(env.VITE_PROD_API_EMAIL_SWAGGER || "") },
+      { kind: "mailpit", qa: externalUrl(env.VITE_QA_API_EMAIL_MAILPIT || ""), prod: externalUrl(env.VITE_PROD_API_EMAIL_MAILPIT || "") },
+    ] : undefined,
   };
 }
 
