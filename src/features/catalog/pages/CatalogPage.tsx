@@ -1,26 +1,30 @@
 import { useSearchParams } from "react-router-dom";
 import {
-  AndroidIcon,
-  FastAPIIcon,
-  GitHubIcon,
-  GroupAction,
   Icon,
-  JavaIcon,
-  KotlinIcon,
-  LangChainIcon,
   OperationalPage,
-  PythonIcon,
-  ReactIcon,
-  ServiceList,
-  SpringIcon,
+  Surface,
   StorybookIcon,
-  SurfaceGroup,
   SwaggerIcon,
-  TerraformIcon,
-  TypeScriptIcon,
-  type ServiceListItem,
 } from "@solaria.network/web-lib";
 import type { ReactNode } from "react";
+import AndroidIcon from "@thesvg/react/android";
+import FastAPIIcon from "@thesvg/react/fastapi";
+import JavaIcon from "@thesvg/react/java";
+import KotlinIcon from "@thesvg/react/kotlin";
+import LangChainIcon from "@thesvg/react/langchain";
+import NpmIcon from "@thesvg/react/npm";
+import PythonIcon from "@thesvg/react/python";
+import PyPIIcon from "@thesvg/react/pypi";
+import RenderIcon from "@thesvg/react/render";
+import GoogleCloudIcon from "@thesvg/react/google-cloud";
+import MailpitIcon from "@thesvg/react/mailpit";
+import ReactIcon from "@thesvg/react/react";
+import SpringIcon from "@thesvg/react/spring";
+import TerraformIcon from "@thesvg/react/terraform";
+import TypeScriptIcon from "@thesvg/react/typescript";
+import CatalogFilterCarousel from "./CatalogFilters";
+import CatalogServices, { type CatalogRepositoryItem } from "./CatalogServices";
+import { groupByStack } from "./Catalog.utils";
 import {
   entries,
   filterGroups,
@@ -33,20 +37,22 @@ import {
 } from "../../../config/catalog";
 
 const FILTER_ICON_SIZE = 22;
-const LINK_ICON_SIZE = 18;
+const brandIconProps = { width: FILTER_ICON_SIZE, height: FILTER_ICON_SIZE, "aria-hidden": true, focusable: false } as const;
+const LINK_ICON_SIZE = 20;
+const linkIconProps = { ...brandIconProps, width: LINK_ICON_SIZE, height: LINK_ICON_SIZE };
 const filterIcons: Record<FilterGroupId, Record<string, ReactNode>> = {
   framework: {
-    spring: <SpringIcon size={FILTER_ICON_SIZE} />,
-    langchain: <LangChainIcon size={FILTER_ICON_SIZE} />,
-    fastapi: <FastAPIIcon size={FILTER_ICON_SIZE} />,
-    react: <ReactIcon size={FILTER_ICON_SIZE} />,
+    spring: <SpringIcon {...brandIconProps} />,
+    langchain: <LangChainIcon {...brandIconProps} />,
+    fastapi: <FastAPIIcon {...brandIconProps} />,
+    react: <ReactIcon {...brandIconProps} />,
   },
   language: {
-    python: <PythonIcon size={FILTER_ICON_SIZE} />,
-    kotlin: <KotlinIcon size={FILTER_ICON_SIZE} />,
-    java: <JavaIcon size={FILTER_ICON_SIZE} />,
-    typescript: <TypeScriptIcon size={FILTER_ICON_SIZE} />,
-    terraform: <TerraformIcon size={FILTER_ICON_SIZE} />,
+    python: <PythonIcon {...brandIconProps} />,
+    kotlin: <KotlinIcon {...brandIconProps} />,
+    java: <JavaIcon {...brandIconProps} />,
+    typescript: <TypeScriptIcon {...brandIconProps} />,
+    terraform: <TerraformIcon {...brandIconProps} />,
   },
   kind: {
     service: <Icon name="server" size={FILTER_ICON_SIZE} />,
@@ -54,42 +60,65 @@ const filterIcons: Record<FilterGroupId, Record<string, ReactNode>> = {
     infra: <Icon name="cloud" size={FILTER_ICON_SIZE} />,
     data: <Icon name="database" size={FILTER_ICON_SIZE} />,
     docs: <Icon name="book" size={FILTER_ICON_SIZE} />,
-    mobile: <AndroidIcon size={FILTER_ICON_SIZE} />,
+    mobile: <AndroidIcon {...brandIconProps} />,
   },
 };
 
-function toItem(entry: CatalogEntry): ServiceListItem {
-  const qaTag = entry.qaLabel ?? "QA";
-  const github = {
-    label: "GitHub",
-    icon: <GitHubIcon size={LINK_ICON_SIZE} />,
-    href: entry.github,
-  };
-  if (entry.swaggerPath) {
-    const swagger = <SwaggerIcon size={LINK_ICON_SIZE} />;
+function hostingTarget(href: string | undefined, fallback: "GCP" | "Render") {
+  const provider = href && new URL(href).hostname.endsWith(".onrender.com") ? "Render" : fallback;
+  return { label: provider, href, icon: provider === "Render" ? <RenderIcon {...linkIconProps} /> : <GoogleCloudIcon {...linkIconProps} /> };
+}
+
+function toItem(entry: CatalogEntry): CatalogRepositoryItem {
+  if (entry.id === "lib-web") {
     return {
       name: entry.id,
+      github: entry.github,
       description: entry.description,
       links: [
-        github,
-        { label: "Swagger PROD", icon: swagger, tag: "PROD", href: withPath(entry.prod, entry.swaggerPath) },
-        { label: "Swagger QA", icon: swagger, tag: qaTag, href: withPath(entry.qa, entry.swaggerPath) },
+        { label: "Abrir pacote no npm", icon: <NpmIcon {...linkIconProps} />, href: "https://www.npmjs.com/package/@solaria.network/web-lib" },
+        { label: "Copiar comando de instalação", icon: <Icon name="copy" size={LINK_ICON_SIZE} />, copyText: "npm install @solaria.network/web-lib" },
       ],
     };
   }
-  const app = <Icon name="globe" size={LINK_ICON_SIZE} />;
+  if (entry.id === "lib-ai") {
+    return {
+      name: entry.id,
+      github: entry.github,
+      description: entry.description,
+      links: [
+        { label: "Abrir pacote no PyPI", icon: <PyPIIcon {...linkIconProps} />, href: "https://pypi.org/project/solaria-lib/" },
+        { label: "Copiar comando de instalação", icon: <Icon name="copy" size={LINK_ICON_SIZE} />, copyText: "pip install git+https://github.com/Solierrr/lib-ai.git" },
+      ],
+    };
+  }
+  const interfaces = entry.interfaces ?? (entry.swaggerPath ? [{ kind: "swagger" as const, prod: withPath(entry.prod, entry.swaggerPath), qa: withPath(entry.qa, entry.swaggerPath) }] : []);
+  if (interfaces.length) {
+    return {
+      name: entry.id,
+      github: entry.github,
+      description: entry.description,
+      links: [],
+      accesses: [...interfaces.map((tool) => ({
+        id: tool.kind,
+        label: tool.kind === "swagger" ? "Swagger" : "Mailpit",
+        icon: tool.kind === "swagger" ? <SwaggerIcon size={LINK_ICON_SIZE} /> : <MailpitIcon {...linkIconProps} />,
+        links: [hostingTarget(tool.prod, "GCP"), hostingTarget(tool.qa, "Render")],
+      })), ...(entry.gallery ? [{ id: "gallery", label: "Galeria de e-mails", icon: <Icon name="book" size={LINK_ICON_SIZE} />, links: [{ label: "Galeria de e-mails", icon: <Icon name="book" size={LINK_ICON_SIZE} />, href: entry.gallery }], direct: true }] : [])],
+    };
+  }
   return {
     name: entry.id,
+    github: entry.github,
     description: entry.description,
-    links: [
-      github,
-      ...(entry.prod ? [{ label: "Aplicação PROD", icon: app, tag: "PROD", href: entry.prod }] : []),
-      ...(entry.qa ? [{ label: `Aplicação ${qaTag}`, icon: app, tag: qaTag, href: entry.qa }] : []),
-    ],
+    links: [],
+    accesses: [hostingTarget(entry.prod, "GCP"), hostingTarget(entry.qa, "Render")].filter((target) => target.href).map((target) => ({
+      id: target.label.toLowerCase(), label: target.label, icon: target.icon, links: [target], direct: true,
+    })),
   };
 }
 
-const storybookItem: ServiceListItem = {
+const storybookItem: CatalogRepositoryItem = {
   name: "storybook",
   description: "Catálogo visual dos componentes, publicado no GitHub Pages.",
   links: storybooks.map((book) => ({
@@ -108,10 +137,8 @@ export default function CatalogPage() {
     if (value && group.options.some((option) => option.id === value)) filters[group.id] = value;
   }
   const hasFilters = Object.keys(filters).length > 0;
-  const items = [
-    ...entries.filter((entry) => matches(entry, filters)).map(toItem),
-    ...(!hasFilters || filters.framework === "react" ? [storybookItem] : []),
-  ];
+  const stacks = groupByStack(entries.filter((entry) => matches(entry, filters)));
+  const showStorybook = !hasFilters || filters.framework === "react";
 
   function toggle(group: FilterGroupId, id: string) {
     setParams(
@@ -132,27 +159,30 @@ export default function CatalogPage() {
       centered
       sideBackground
     >
-      <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-6 px-6 pb-10">
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          {filterGroups.map((group) => (
-            <SurfaceGroup key={group.id} direction="horizontal" divided={false} role="group" aria-label={group.label}>
-              {group.options.map((option) => (
-                <GroupAction
-                  key={option.id}
-                  layout="icon"
-                  label={`${group.label}: ${option.label}`}
-                  glyph={filterIcons[group.id][option.id]}
-                  active={filters[group.id] === option.id}
-                  onClick={() => toggle(group.id, option.id)}
-                />
-              ))}
-            </SurfaceGroup>
+      <div className="mx-auto flex w-full min-w-0 max-w-3xl flex-col items-center gap-6 px-6 pb-10">
+        <CatalogFilterCarousel filters={filters} icons={filterIcons} onToggle={toggle} />
+        <section aria-label="Resultados" className="flex w-full min-w-0 flex-col gap-6">
+          {stacks.map((stack) => (
+            <section key={`${stack.dimension}:${stack.id}`} aria-label={stack.label} className="flex min-w-0 items-start gap-4">
+              <Surface title={stack.label} aria-hidden="true" className="size-16 shrink-0 rounded-full!" contentClassName="flex size-full items-center justify-center rounded-full!">
+                {filterIcons[stack.dimension][stack.id]}
+              </Surface>
+              <div className="min-w-0 flex-1">
+                <CatalogServices items={stack.entries.map(toItem)} />
+              </div>
+            </section>
           ))}
-        </div>
-        <section aria-label="Resultados" className="w-full">
-          {items.length > 0 ? (
-            <ServiceList items={items} />
-          ) : (
+          {showStorybook && (
+            <section aria-label="Storybook" className="flex min-w-0 items-start gap-4">
+              <Surface title="Storybook" aria-hidden="true" className="size-16 shrink-0 rounded-full!" contentClassName="flex size-full items-center justify-center rounded-full!">
+                <StorybookIcon size={FILTER_ICON_SIZE} />
+              </Surface>
+              <div className="min-w-0 flex-1">
+                <CatalogServices items={[storybookItem]} />
+              </div>
+            </section>
+          )}
+          {!stacks.length && !showStorybook && (
             <p className="text-center text-gray">Nenhum repositório com esses filtros.</p>
           )}
         </section>
