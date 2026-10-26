@@ -13,11 +13,11 @@
   "dependencies": {
     "@solaria.network/web-lib": "^0.5.0",
     "@thesvg/react": "^3.4.1",
-    "i18next": "^26.4.2",
-    "lucide-react": "^1.49.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
-    "react-i18next": "^17.0.15",
+    "i18next": "^26.5.2",
+    "lucide-react": "^1.59.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-i18next": "^17.1.0",
     "react-icons": "^5.7.0",
     "react-router-dom": "^7.18.4",
     "react-speech-recognition": "^4.0.1"
@@ -32,15 +32,15 @@
     "@types/react-dom": "^19.2.7",
     "@types/react-speech-recognition": "^3.9.6",
     "@vitejs/plugin-react": "^6.1.1",
-    "eslint": "^10.10.0",
+    "eslint": "^10.13.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.6",
     "globals": "^17.12.0",
     "jsdom": "^25.0.1",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
-    "typescript-eslint": "^8.69.0",
+    "typescript-eslint": "^8.71.2",
     "vite": "^8.3.0",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   }
 }
