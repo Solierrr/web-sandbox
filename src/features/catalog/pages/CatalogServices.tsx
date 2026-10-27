@@ -4,6 +4,7 @@ import { GitHubIcon, MenuItem, MenuList, Surface, type ServiceListItem, type Ser
 
 interface CatalogAction extends ServiceListLink {
   copyText?: string;
+  onSelect?: () => void;
 }
 
 export interface CatalogRepositoryItem extends Omit<ServiceListItem, "links"> {
@@ -129,6 +130,7 @@ function CatalogLinkMenu({ name, links, access }: { name: string; links: Catalog
               disabled={!link.href && !link.copyText}
               onSelect={() => {
                 if (link.copyText) void navigator.clipboard.writeText(link.copyText);
+                else if (link.onSelect) link.onSelect();
                 else if (link.href) window.open(link.href, "_blank", "noopener,noreferrer");
                 close();
               }}

@@ -1,4 +1,5 @@
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import qaServices from "../../../../shared/qa-services.json";
 import {
   Icon,
   OperationalPage,
@@ -69,7 +70,7 @@ function hostingTarget(href: string | undefined, fallback: "GCP" | "Render") {
   return { label: provider, href, icon: provider === "Render" ? <RenderIcon {...linkIconProps} /> : <GoogleCloudIcon {...linkIconProps} /> };
 }
 
-function toItem(entry: CatalogEntry): CatalogRepositoryItem {
+function toItem(entry: CatalogEntry, navigate: (path: string) => void): CatalogRepositoryItem {
   if (entry.id === "lib-web") {
     return {
       name: entry.id,
@@ -103,7 +104,7 @@ function toItem(entry: CatalogEntry): CatalogRepositoryItem {
         id: tool.kind,
         label: tool.kind === "swagger" ? "Swagger" : "Mailpit",
         icon: tool.kind === "swagger" ? <SwaggerIcon size={LINK_ICON_SIZE} /> : <MailpitIcon {...linkIconProps} />,
-        links: [hostingTarget(tool.prod, "GCP"), hostingTarget(tool.qa, "Render")],
+        links: [hostingTarget(tool.prod, "GCP"), ...(tool.kind === "swagger" && qaServices.some(service => service.id === entry.id) ? [{ label: "QA · Sandbox", href: `/docs/${entry.id}`, icon: <RenderIcon {...linkIconProps} />, onSelect: () => navigate(`/docs/${entry.id}`) }] : [hostingTarget(tool.qa, "Render")])],
       })), ...(entry.gallery ? [{ id: "gallery", label: "Galeria de e-mails", icon: <Icon name="book" size={LINK_ICON_SIZE} />, links: [{ label: "Galeria de e-mails", icon: <Icon name="book" size={LINK_ICON_SIZE} />, href: entry.gallery }], direct: true }] : [])],
     };
   }
@@ -130,6 +131,7 @@ const storybookItem: CatalogRepositoryItem = {
 };
 
 export default function CatalogPage() {
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const filters: CatalogFilters = {};
   for (const group of filterGroups) {
@@ -168,7 +170,7 @@ export default function CatalogPage() {
                 {filterIcons[stack.dimension][stack.id]}
               </Surface>
               <div className="min-w-0 flex-1">
-                <CatalogServices items={stack.entries.map(toItem)} />
+                <CatalogServices items={stack.entries.map(entry => toItem(entry, navigate))} />
               </div>
             </section>
           ))}

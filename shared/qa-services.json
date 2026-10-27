@@ -1,0 +1,13 @@
+[
+  {"id":"api-core","url":"https://api-core-cqfn.onrender.com","spec":"/v3/api-docs"},
+  {"id":"api-messenger","url":"https://api-messenger-5g2n.onrender.com","spec":"/v3/api-docs"},
+  {"id":"api-notify","url":"https://api-notify-i637.onrender.com","spec":"/v3/api-docs"},
+  {"id":"api-recommendation","url":"https://api-recommendation-qlml.onrender.com","spec":"/openapi.json"},
+  {"id":"api-email","url":"https://api-email-6swz.onrender.com","spec":"/openapi.json"},
+  {"id":"api-google","url":"https://google-registry.onrender.com","spec":"/openapi.json"},
+  {"id":"ai-assistant","url":"https://ai-assistant-5ljd.onrender.com","spec":"/openapi.json"},
+  {"id":"ai-geographic","url":"https://ai-geographic.onrender.com","spec":"/openapi.json"},
+  {"id":"ai-operational","url":"https://ai-operational.onrender.com","spec":"/openapi.json"},
+  {"id":"ai-accessibility","url":"https://ai-accessibility.onrender.com","spec":"/openapi.json"},
+  {"id":"ai-validation","url":"https://ai-validation-jjb7.onrender.com","spec":"/openapi.json"}
+]

@@ -10,6 +10,7 @@ import LoginPage from "./features/access/pages/LoginPage";
 import CatalogPage from "./features/catalog/pages/CatalogPage";
 
 const KeepalivePage = lazy(() => import("./features/keepalive/pages/KeepalivePage"));
+const DocumentationPage = lazy(() => import("./features/documentation/DocumentationPage"));
 // Tela do fluxo de IA: reservada, será implementada por outra pessoa.
 // const AiFlowPage = lazy(() => import("./features/ai/pages/AiFlowPage"));
 
@@ -27,6 +28,7 @@ function Portal() {
           items: [
             { to: "/", label: "Catálogo", icon: "home" },
             { to: "/keepalive", label: "Keepalive", icon: "refresh" },
+            { to: "/docs", label: "Documentação", icon: "book" },
             // { to: "/ia", label: "Fluxo de IA", icon: "sparkles" },
           ],
         },
@@ -36,6 +38,8 @@ function Portal() {
         <Routes>
           <Route path="/" element={<CatalogPage />} />
           <Route path="/keepalive" element={<KeepalivePage />} />
+          <Route path="/docs" element={<DocumentationPage />} />
+          <Route path="/docs/:id" element={<DocumentationPage />} />
           {/* <Route path="/ia" element={<AiFlowPage />} /> */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
