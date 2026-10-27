@@ -1,0 +1,10 @@
+node_modules
+dist
+.server-dist
+.git
+.env
+.env.*
+.claude
+.codex
+vite.mock.config.ts
+*.log

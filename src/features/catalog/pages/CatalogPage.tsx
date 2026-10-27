@@ -1,10 +1,13 @@
 import { useSearchParams } from "react-router-dom";
+import qaServices from "../../../../shared/qa-services.json";
+import { openSwagger } from "../../swagger/swagger.service";
 import {
   Icon,
   OperationalPage,
   Surface,
   StorybookIcon,
   SwaggerIcon,
+  notify,
 } from "@solaria.network/web-lib";
 import type { ReactNode } from "react";
 import AndroidIcon from "@thesvg/react/android";
@@ -23,7 +26,7 @@ import SpringIcon from "@thesvg/react/spring";
 import TerraformIcon from "@thesvg/react/terraform";
 import TypeScriptIcon from "@thesvg/react/typescript";
 import CatalogFilterCarousel from "./CatalogFilters";
-import CatalogServices, { type CatalogRepositoryItem } from "./CatalogServices";
+import CatalogServices, { type CatalogAccess, type CatalogRepositoryItem } from "./CatalogServices";
 import { groupByStack } from "./Catalog.utils";
 import {
   entries,
@@ -92,19 +95,26 @@ function toItem(entry: CatalogEntry): CatalogRepositoryItem {
       ],
     };
   }
-  const interfaces = entry.interfaces ?? (entry.swaggerPath ? [{ kind: "swagger" as const, prod: withPath(entry.prod, entry.swaggerPath), qa: withPath(entry.qa, entry.swaggerPath) }] : []);
+  const interfaces = [...(entry.interfaces ?? (entry.swaggerPath ? [{ kind: "swagger" as const, prod: withPath(entry.prod, entry.swaggerPath), qa: withPath(entry.qa, entry.swaggerPath) }] : []))];
+  const hasSwagger = qaServices.some(service => service.id === entry.id);
+  if (hasSwagger && !interfaces.some(tool => tool.kind === "swagger")) interfaces.unshift({ kind: "swagger" });
   if (interfaces.length) {
     return {
       name: entry.id,
       github: entry.github,
       description: entry.description,
       links: [],
-      accesses: [...interfaces.map((tool) => ({
+      accesses: [...interfaces.flatMap<CatalogAccess>((tool) => tool.kind === "swagger" && hasSwagger ? [{
+        id: "swagger-qa", label: "Swagger QA", icon: <SwaggerIcon size={LINK_ICON_SIZE} />, direct: true,
+        links: [{ label: "Swagger QA", href: `/swagger.html?service=${entry.id}`, icon: <SwaggerIcon size={LINK_ICON_SIZE} />, onSelect: () => {
+          try { openSwagger(entry.id); } catch (error) { notify(error instanceof Error ? error.message : "Não foi possível abrir o Swagger."); }
+        } }],
+      }, ...(tool.prod ? [{ id: "swagger-prod", label: "Swagger PROD", icon: <GoogleCloudIcon {...linkIconProps} />, direct: true, links: [hostingTarget(tool.prod, "GCP")] }] : [])] : [{
         id: tool.kind,
         label: tool.kind === "swagger" ? "Swagger" : "Mailpit",
         icon: tool.kind === "swagger" ? <SwaggerIcon size={LINK_ICON_SIZE} /> : <MailpitIcon {...linkIconProps} />,
         links: [hostingTarget(tool.prod, "GCP"), hostingTarget(tool.qa, "Render")],
-      })), ...(entry.gallery ? [{ id: "gallery", label: "Galeria de e-mails", icon: <Icon name="book" size={LINK_ICON_SIZE} />, links: [{ label: "Galeria de e-mails", icon: <Icon name="book" size={LINK_ICON_SIZE} />, href: entry.gallery }], direct: true }] : [])],
+      }]), ...(entry.gallery ? [{ id: "gallery", label: "Galeria de e-mails", icon: <Icon name="book" size={LINK_ICON_SIZE} />, links: [{ label: "Galeria de e-mails", icon: <Icon name="book" size={LINK_ICON_SIZE} />, href: entry.gallery }], direct: true }] : [])],
     };
   }
   return {

@@ -23,7 +23,21 @@ Com `VITE_MOCKS=ALWAYS` (padrão do `.env.example`) e só no `npm run dev`, o lo
 - Keepalive: acorda os serviços de QA no Render com uma requisição simples (`no-cors`, sem integrar o serviço de keepalive). Há um botão por serviço, conjuntos predefinidos (Essenciais, IA e Todos) e seleção múltipla. A resposta indica só que o serviço respondeu; o plano free pode levar cerca de um minuto para acordar. Aplicações estáticas (web-app e web-sandbox) não dormem e ficam de fora.
 - Fluxo de IA: reservado e comentado em `src/App.tsx` (rota, item de menu e import). Será implementado por outra pessoa.
 
-As telas de teste manual por serviço (API-core, API-messenger, serviços de IA e demais) foram removidas; o catálogo concentra os links de cada serviço. A sessão fica só em memória, com logout local imediato.
+O catálogo concentra os atalhos. O ícone Swagger de cada serviço abre diretamente a documentação QA em nova aba, na página independente `/swagger.html?service=<servico>`. Produção continua como atalho externo, sem injeção de credenciais.
+
+## Portal Swagger de QA
+
+Defina `VITE_MOCKS=DEACTIVATED`. Em um terminal, execute o servidor com as credenciais de QA injetadas pelo Infisical (`npm run dev:server`); em outro, `npm run dev`. O Vite encaminha `/api/qa` para `127.0.0.1:5180`. `.env.local` é configuração do Vite e **não** é carregado pelo processo Node. Não coloque service keys em variáveis `VITE_*`.
+
+Todas as contas com JWT de acesso válido do QA podem usar o portal. O servidor verifica assinatura RS256, emissor, expiração e tipo do token usando o JWKS fixo do api-auth de QA. Sessões de mock não acessam as APIs pelo proxy. A documentação e as chamadas passam pelo servidor do próprio sandbox; service keys ficam fora do navegador. Não existe novo repositório BFF.
+
+O Swagger tem seu próprio HTML, bundle, CSS e favicon oficiais, sem carregar a aplicação React do sandbox, sidebar, navbar, canvas ou componentes Solaria. As antigas páginas `/docs` e o painel de documentação foram removidos. Mantenha a aba original do catálogo aberta: ela fornece o JWT em memória e renova a sessão quando necessário. A comunicação `postMessage` valida origem, aba registrada, serviço e identificador da requisição. Tokens não passam pela URL nem são persistidos. Abrir a URL isoladamente sem a aba do catálogo apresenta orientação para abrir pelo serviço.
+
+`shared/qa-services.json` define os destinos permitidos; URLs fornecidas pelo navegador não são aceitas. `server/portal/portal.service.ts` mapeia as credenciais: `SERVICE_KEY_API_EMAIL`, `SERVICE_KEY_API_RECOMMENDATION`, `RECOMMENDATION_API_KEY`, `SYNC_API_KEY`, `REGISTRY_CONSUMER_TOKEN` e `VALIDATION_SERVICE_TOKEN`. Os demais serviços recebem o JWT do usuário. Credencial ausente retorna 503, sem contornar autenticação. As rotas internas e as rotas `/v1/llm` do Registry não estão disponíveis, pois entregam credenciais de provedores.
+
+O proxy aceita JSON, binários e multipart até 10 MiB, bloqueia redirecionamentos e referências OpenAPI externas e não repete mutações automaticamente. Streaming/SSE e WebSocket não fazem parte desta versão. Serviços adormecidos podem demorar até 90 segundos; falhas ficam isoladas na documentação selecionada.
+
+O portal com proxy é publicado em `https://web-sandbox-qa.onrender.com` como **Render Web Service**, com o `Dockerfile`, health check `/health` e grupo `Infisical-injection`. O entrypoint carrega apenas QA. `npm run build` gera frontend e servidor; `NODE_ENV=production npm start` serve ambos na mesma origem. O Static Site anterior foi preservado durante a migração; apenas publicar `dist` não disponibiliza o proxy.
 
 ## Biblioteca de componentes
 
@@ -39,4 +53,4 @@ npm run lint
 npm run build
 ```
 
-Os testes usam respostas controladas e não alteram QA. Nenhum BFF é utilizado, e nenhuma chave interna deve ser adicionada a variáveis `VITE_*`.
+Os testes usam respostas controladas e não alteram QA. O proxy fica dentro deste repositório, e nenhuma chave interna deve ser adicionada a variáveis `VITE_*`.

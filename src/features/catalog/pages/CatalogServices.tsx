@@ -4,6 +4,7 @@ import { GitHubIcon, MenuItem, MenuList, Surface, type ServiceListItem, type Ser
 
 interface CatalogAction extends ServiceListLink {
   copyText?: string;
+  onSelect?: () => void;
 }
 
 export interface CatalogRepositoryItem extends Omit<ServiceListItem, "links"> {
@@ -97,6 +98,10 @@ function CatalogLinkMenu({ name, links, access }: { name: string; links: Catalog
   const icon = access?.icon ?? links[0].icon;
   const label = access ? `${access.label} de ${name}` : `links de ${name}`;
 
+  if (access?.direct && links.length === 1 && links[0].onSelect) {
+    return <button type="button" onClick={links[0].onSelect} aria-label={`Abrir ${label} (nova aba)`} title={label} className={triggerClasses}><span aria-hidden="true" className={glyphClasses}>{icon}</span></button>;
+  }
+
   if (access?.direct && links.length === 1 && links[0].href) {
     return <a href={links[0].href} target="_blank" rel="noopener noreferrer" aria-label={`${label} (abre em nova aba)`} title={label} className={triggerClasses}><span aria-hidden="true" className={glyphClasses}>{icon}</span></a>;
   }
@@ -129,6 +134,7 @@ function CatalogLinkMenu({ name, links, access }: { name: string; links: Catalog
               disabled={!link.href && !link.copyText}
               onSelect={() => {
                 if (link.copyText) void navigator.clipboard.writeText(link.copyText);
+                else if (link.onSelect) link.onSelect();
                 else if (link.href) window.open(link.href, "_blank", "noopener,noreferrer");
                 close();
               }}

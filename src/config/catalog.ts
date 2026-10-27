@@ -45,7 +45,7 @@ const PROD_DOMAIN = "solarianetwork.site";
 const GITHUB = "https://github.com/Solierrr";
 const RENDER_QA: Record<string, string> = {
   "web-app": "https://web-app-ldi0.onrender.com",
-  "web-sandbox": "https://web-sandbox-7ug0.onrender.com",
+  "web-sandbox": "https://web-sandbox-qa.onrender.com",
   "api-email": "https://api-email-6swz.onrender.com",
   "mcp-database": "https://api-mcp-wey6.onrender.com",
 };
