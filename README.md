@@ -35,7 +35,7 @@ Todas as contas com JWT de acesso válido do QA podem usar o portal. O servidor 
 
 O proxy aceita JSON, binários e multipart até 10 MiB, bloqueia redirecionamentos e referências OpenAPI externas e não repete mutações automaticamente. Streaming/SSE e WebSocket não fazem parte desta versão. Serviços adormecidos podem demorar até 90 segundos; falhas ficam isoladas na documentação selecionada.
 
-Para publicar, use o `Dockerfile` como **Render Web Service** (não Static Site), com `/health` e o grupo existente de autenticação Infisical. O entrypoint carrega apenas QA. `npm run build` gera frontend e servidor; `NODE_ENV=production npm start` serve ambos na mesma origem. O Static Site atual precisa ser substituído no fluxo de publicação; apenas publicar `dist` não disponibiliza o proxy.
+O portal com proxy é publicado em `https://web-sandbox-qa.onrender.com` como **Render Web Service**, com o `Dockerfile`, health check `/health` e grupo `Infisical-injection`. O entrypoint carrega apenas QA. `npm run build` gera frontend e servidor; `NODE_ENV=production npm start` serve ambos na mesma origem. O Static Site anterior foi preservado durante a migração; apenas publicar `dist` não disponibiliza o proxy.
 
 ## Biblioteca de componentes
 
