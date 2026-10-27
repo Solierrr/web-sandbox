@@ -48,6 +48,7 @@ const RENDER_QA: Record<string, string> = {
   "web-sandbox": "https://web-sandbox-qa.onrender.com",
   "api-email": "https://api-email-6swz.onrender.com",
   "mcp-database": "https://api-mcp-wey6.onrender.com",
+  "api-notify": "https://api-notify-i637.onrender.com",
 };
 const PROD_HOSTS: Record<string, string> = {
   "web-app": `https://${PROD_DOMAIN}`,
@@ -55,7 +56,7 @@ const PROD_HOSTS: Record<string, string> = {
 const NO_PROD = new Set(["web-sandbox", "mcp-database"]);
 
 const FRAMEWORKS: Record<FrameworkId, string[]> = {
-  spring: ["api-auth", "api-core", "api-messenger"],
+  spring: ["api-auth", "api-core", "api-messenger", "api-notify"],
   langchain: ["ai-assistant", "ai-geographic", "ai-operational", "ai-validation", "ai-accessibility"],
   fastapi: [
     "ai-assistant",
