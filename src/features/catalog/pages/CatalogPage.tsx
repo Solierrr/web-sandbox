@@ -1,11 +1,13 @@
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import qaServices from "../../../../shared/qa-services.json";
+import { openSwagger } from "../../swagger/swagger.service";
 import {
   Icon,
   OperationalPage,
   Surface,
   StorybookIcon,
   SwaggerIcon,
+  notify,
 } from "@solaria.network/web-lib";
 import type { ReactNode } from "react";
 import AndroidIcon from "@thesvg/react/android";
@@ -24,7 +26,7 @@ import SpringIcon from "@thesvg/react/spring";
 import TerraformIcon from "@thesvg/react/terraform";
 import TypeScriptIcon from "@thesvg/react/typescript";
 import CatalogFilterCarousel from "./CatalogFilters";
-import CatalogServices, { type CatalogRepositoryItem } from "./CatalogServices";
+import CatalogServices, { type CatalogAccess, type CatalogRepositoryItem } from "./CatalogServices";
 import { groupByStack } from "./Catalog.utils";
 import {
   entries,
@@ -70,7 +72,7 @@ function hostingTarget(href: string | undefined, fallback: "GCP" | "Render") {
   return { label: provider, href, icon: provider === "Render" ? <RenderIcon {...linkIconProps} /> : <GoogleCloudIcon {...linkIconProps} /> };
 }
 
-function toItem(entry: CatalogEntry, navigate: (path: string) => void): CatalogRepositoryItem {
+function toItem(entry: CatalogEntry): CatalogRepositoryItem {
   if (entry.id === "lib-web") {
     return {
       name: entry.id,
@@ -93,19 +95,26 @@ function toItem(entry: CatalogEntry, navigate: (path: string) => void): CatalogR
       ],
     };
   }
-  const interfaces = entry.interfaces ?? (entry.swaggerPath ? [{ kind: "swagger" as const, prod: withPath(entry.prod, entry.swaggerPath), qa: withPath(entry.qa, entry.swaggerPath) }] : []);
+  const interfaces = [...(entry.interfaces ?? (entry.swaggerPath ? [{ kind: "swagger" as const, prod: withPath(entry.prod, entry.swaggerPath), qa: withPath(entry.qa, entry.swaggerPath) }] : []))];
+  const hasSwagger = qaServices.some(service => service.id === entry.id);
+  if (hasSwagger && !interfaces.some(tool => tool.kind === "swagger")) interfaces.unshift({ kind: "swagger" });
   if (interfaces.length) {
     return {
       name: entry.id,
       github: entry.github,
       description: entry.description,
       links: [],
-      accesses: [...interfaces.map((tool) => ({
+      accesses: [...interfaces.flatMap<CatalogAccess>((tool) => tool.kind === "swagger" && hasSwagger ? [{
+        id: "swagger-qa", label: "Swagger QA", icon: <SwaggerIcon size={LINK_ICON_SIZE} />, direct: true,
+        links: [{ label: "Swagger QA", href: `/swagger.html?service=${entry.id}`, icon: <SwaggerIcon size={LINK_ICON_SIZE} />, onSelect: () => {
+          try { openSwagger(entry.id); } catch (error) { notify(error instanceof Error ? error.message : "Não foi possível abrir o Swagger."); }
+        } }],
+      }, ...(tool.prod ? [{ id: "swagger-prod", label: "Swagger PROD", icon: <GoogleCloudIcon {...linkIconProps} />, direct: true, links: [hostingTarget(tool.prod, "GCP")] }] : [])] : [{
         id: tool.kind,
         label: tool.kind === "swagger" ? "Swagger" : "Mailpit",
         icon: tool.kind === "swagger" ? <SwaggerIcon size={LINK_ICON_SIZE} /> : <MailpitIcon {...linkIconProps} />,
-        links: [hostingTarget(tool.prod, "GCP"), ...(tool.kind === "swagger" && qaServices.some(service => service.id === entry.id) ? [{ label: "QA · Sandbox", href: `/docs/${entry.id}`, icon: <RenderIcon {...linkIconProps} />, onSelect: () => navigate(`/docs/${entry.id}`) }] : [hostingTarget(tool.qa, "Render")])],
-      })), ...(entry.gallery ? [{ id: "gallery", label: "Galeria de e-mails", icon: <Icon name="book" size={LINK_ICON_SIZE} />, links: [{ label: "Galeria de e-mails", icon: <Icon name="book" size={LINK_ICON_SIZE} />, href: entry.gallery }], direct: true }] : [])],
+        links: [hostingTarget(tool.prod, "GCP"), hostingTarget(tool.qa, "Render")],
+      }]), ...(entry.gallery ? [{ id: "gallery", label: "Galeria de e-mails", icon: <Icon name="book" size={LINK_ICON_SIZE} />, links: [{ label: "Galeria de e-mails", icon: <Icon name="book" size={LINK_ICON_SIZE} />, href: entry.gallery }], direct: true }] : [])],
     };
   }
   return {
@@ -131,7 +140,6 @@ const storybookItem: CatalogRepositoryItem = {
 };
 
 export default function CatalogPage() {
-  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const filters: CatalogFilters = {};
   for (const group of filterGroups) {
@@ -170,7 +178,7 @@ export default function CatalogPage() {
                 {filterIcons[stack.dimension][stack.id]}
               </Surface>
               <div className="min-w-0 flex-1">
-                <CatalogServices items={stack.entries.map(entry => toItem(entry, navigate))} />
+                <CatalogServices items={stack.entries.map(toItem)} />
               </div>
             </section>
           ))}

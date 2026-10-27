@@ -1,9 +1,9 @@
 declare module "swagger-ui-dist/swagger-ui-bundle.js" {
-  import type { SwaggerRequest } from "./documentation.service";
+  import type { SwaggerRequest } from "./swagger.client";
   export default function SwaggerUI(options: {
     domNode: HTMLElement;
     spec: object;
-    docExpansion: "none";
+    docExpansion: "list" | "none";
     filter: boolean;
     validatorUrl: null;
     queryConfigEnabled: boolean;

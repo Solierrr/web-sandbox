@@ -1,11 +1,18 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import CatalogServices from "./CatalogServices";
 
 afterEach(cleanup);
 
 describe("CatalogServices", () => {
+  it("opens the native Swagger directly instead of an environment menu", () => {
+    const open = vi.fn();
+    render(<CatalogServices items={[{ name: "api-email", links: [], accesses: [{ id: "swagger-qa", label: "Swagger QA", icon: null, direct: true, links: [{ label: "Swagger QA", icon: null, href: "/swagger.html?service=api-email", onSelect: open }] }] }]} />);
+    fireEvent.click(screen.getByRole("button", { name: "Abrir Swagger QA de api-email (nova aba)" }));
+    expect(open).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
   it("mantém interfaces separadas e permite acesso direto ao provedor", () => {
     render(<CatalogServices items={[{
       name: "api-email",

@@ -23,13 +23,15 @@ Com `VITE_MOCKS=ALWAYS` (padrão do `.env.example`) e só no `npm run dev`, o lo
 - Keepalive: acorda os serviços de QA no Render com uma requisição simples (`no-cors`, sem integrar o serviço de keepalive). Há um botão por serviço, conjuntos predefinidos (Essenciais, IA e Todos) e seleção múltipla. A resposta indica só que o serviço respondeu; o plano free pode levar cerca de um minuto para acordar. Aplicações estáticas (web-app e web-sandbox) não dormem e ficam de fora.
 - Fluxo de IA: reservado e comentado em `src/App.tsx` (rota, item de menu e import). Será implementado por outra pessoa.
 
-O catálogo concentra os atalhos; a documentação de QA abre na mesma aba em `/docs/:servico`, preservando a sessão em memória. Produção continua como atalho externo, sem injeção de credenciais.
+O catálogo concentra os atalhos. O ícone Swagger de cada serviço abre diretamente a documentação QA em nova aba, na página independente `/swagger.html?service=<servico>`. Produção continua como atalho externo, sem injeção de credenciais.
 
 ## Portal Swagger de QA
 
 Defina `VITE_MOCKS=DEACTIVATED`. Em um terminal, execute o servidor com as credenciais de QA injetadas pelo Infisical (`npm run dev:server`); em outro, `npm run dev`. O Vite encaminha `/api/qa` para `127.0.0.1:5180`. `.env.local` é configuração do Vite e **não** é carregado pelo processo Node. Não coloque service keys em variáveis `VITE_*`.
 
 Todas as contas com JWT de acesso válido do QA podem usar o portal. O servidor verifica assinatura RS256, emissor, expiração e tipo do token usando o JWKS fixo do api-auth de QA. Sessões de mock não acessam as APIs pelo proxy. A documentação e as chamadas passam pelo servidor do próprio sandbox; service keys ficam fora do navegador. Não existe novo repositório BFF.
+
+O Swagger tem seu próprio HTML, bundle, CSS e favicon oficiais, sem carregar a aplicação React do sandbox, sidebar, navbar, canvas ou componentes Solaria. As antigas páginas `/docs` e o painel de documentação foram removidos. Mantenha a aba original do catálogo aberta: ela fornece o JWT em memória e renova a sessão quando necessário. A comunicação `postMessage` valida origem, aba registrada, serviço e identificador da requisição. Tokens não passam pela URL nem são persistidos. Abrir a URL isoladamente sem a aba do catálogo apresenta orientação para abrir pelo serviço.
 
 `shared/qa-services.json` define os destinos permitidos; URLs fornecidas pelo navegador não são aceitas. `server/portal/portal.service.ts` mapeia as credenciais: `SERVICE_KEY_API_EMAIL`, `SERVICE_KEY_API_RECOMMENDATION`, `RECOMMENDATION_API_KEY`, `SYNC_API_KEY`, `REGISTRY_CONSUMER_TOKEN` e `VALIDATION_SERVICE_TOKEN`. Os demais serviços recebem o JWT do usuário. Credencial ausente retorna 503, sem contornar autenticação. As rotas internas e as rotas `/v1/llm` do Registry não estão disponíveis, pois entregam credenciais de provedores.
 
