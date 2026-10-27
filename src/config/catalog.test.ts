@@ -13,7 +13,7 @@ describe("catálogo de repositórios", () => {
   });
 
   it("filtra por framework, linguagem e tipo", () => {
-    expect(ids({ framework: "spring" })).toEqual(["api-auth", "api-core", "api-messenger"]);
+    expect(ids({ framework: "spring" })).toEqual(["api-auth", "api-core", "api-messenger", "api-notify"]);
     expect(ids({ framework: "react" })).toEqual(["lib-web", "web-app", "web-sandbox"]);
     expect(ids({ framework: "fastapi" })).toEqual(
       expect.arrayContaining(["ai-assistant", "api-recommendation", "api-google"]),
