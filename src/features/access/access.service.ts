@@ -76,7 +76,7 @@ async function exchange(path: string, body: object) {
     });
   } catch {
     throw new Error(
-      "Não foi possível acessar a autenticação de QA. Confira a conexão e o CORS.",
+      "Não foi possível entrar agora. Tente novamente em instantes.",
     );
   }
   if (!response.ok)
