@@ -134,7 +134,7 @@ function qaUrl(id: string) {
 
 function prodUrl(id: string) {
   if (NO_PROD.has(id)) return undefined;
-  return externalUrl(env[envName(id, "PROD")] || PROD_HOSTS[id] || `https://${id}.${PROD_DOMAIN}`);
+  return externalUrl(env[envName(id, "PROD")] || PROD_HOSTS[id] || `https://${id.replace(/^(api|ai)-/, "")}.${PROD_DOMAIN}`);
 }
 
 function toEntry(repo: (typeof repositories)[number]): CatalogEntry {

@@ -37,9 +37,9 @@ describe("catálogo de repositórios", () => {
   it("usa o caminho de Swagger de cada tecnologia em QA e PROD", () => {
     const core = find("api-core");
     expect(withPath(core?.qa, core?.swaggerPath)).toBe("https://api-core-cqfn.onrender.com/swagger-ui/index.html");
-    expect(withPath(core?.prod, core?.swaggerPath)).toBe("https://api-core.solarianetwork.site/swagger-ui/index.html");
+    expect(withPath(core?.prod, core?.swaggerPath)).toBe("https://core.solarianetwork.site/swagger-ui/index.html");
     const assistant = find("ai-assistant");
-    expect(withPath(assistant?.prod, assistant?.swaggerPath)).toBe("https://ai-assistant.solarianetwork.site/docs");
+    expect(withPath(assistant?.prod, assistant?.swaggerPath)).toBe("https://assistant.solarianetwork.site/docs");
   });
 
   it("não inventa ambientes que não existem", () => {
