@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/Solierrr/web-sandbox/compare/v0.4.0...v0.5.0) (2026-10-30)
+
+
+### Features
+
+* add api-notify and infra-grafana to the catalog ([#16](https://github.com/Solierrr/web-sandbox/issues/16)) ([0d7a55c](https://github.com/Solierrr/web-sandbox/commit/0d7a55c094b4efc3b39f58e63cc6bedb668ddeea))
+* add authenticated qa swagger portal ([#14](https://github.com/Solierrr/web-sandbox/issues/14)) ([cefd75b](https://github.com/Solierrr/web-sandbox/commit/cefd75b63bf03a1a47f43ffb8f20970d5f3da32b))
+
+
+### Bug Fixes
+
+* show a generic error when the login request fails ([#17](https://github.com/Solierrr/web-sandbox/issues/17)) ([a8b07dd](https://github.com/Solierrr/web-sandbox/commit/a8b07dd2ef792e9f25a756aaf736e0ae07c3d576))
+
 ## [0.4.0](https://github.com/Solierrr/web-sandbox/compare/v0.3.0...v0.4.0) (2026-10-26)
 
 
