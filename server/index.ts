@@ -1,8 +1,10 @@
 import staticFiles from "@fastify/static";
 import { fileURLToPath } from "node:url";
+import { createAccessVerifier, readAccessSettings } from "./access/access.auth.js";
 import { createApp } from "./app.js";
 
-const app = createApp();
+const access = readAccessSettings();
+const app = createApp({ access: access && createAccessVerifier(access) });
 if (process.env.NODE_ENV === "production") {
   await app.register(staticFiles, { root: fileURLToPath(new URL("../../dist", import.meta.url)) });
   app.setNotFoundHandler((request, reply) => request.url.startsWith("/api/") ? reply.code(404).send({ message: "Rota não encontrada." }) : reply.sendFile("index.html"));

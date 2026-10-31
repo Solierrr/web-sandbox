@@ -39,6 +39,10 @@ O proxy aceita JSON, binários e multipart até 10 MiB, bloqueia redirecionament
 
 O portal com proxy é publicado em `https://web-sandbox-qa.onrender.com` como **Render Web Service**, com o `Dockerfile`, health check `/health` e grupo `Infisical-injection`. O entrypoint carrega apenas QA. `npm run build` gera frontend e servidor; `NODE_ENV=production npm start` serve ambos na mesma origem. O Static Site anterior foi preservado durante a migração; apenas publicar `dist` não disponibiliza o proxy.
 
+### Atrás do Cloudflare Access
+
+Com `ACCESS_TEAM_DOMAIN` e `ACCESS_AUD` definidos, o servidor só atende requisições que trazem o JWT do Cloudflare Access (`Cf-Access-Jwt-Assertion`), conferindo assinatura, emissor e AUD do aplicativo; o `/health` do Render fica aberto. Assim o endereço direto do Render deixa de ser um caminho em volta do Access, e só quem está no cadastro de desenvolvedores do Access abre o portal. Sem as duas variáveis (desenvolvimento local), o guarda fica desligado; definir só uma das duas impede o servidor de subir.
+
 ## Biblioteca de componentes
 
 `@solaria.network/web-lib` vem do npm, no intervalo `^0.5.0` (correções e novidades compatíveis da 0.5.x). O `package-lock.json` fixa a versão exata e o Dependabot abre as PRs de atualização.
