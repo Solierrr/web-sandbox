@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import { verifyQaToken } from "./portal/portal.auth.js";
 import { boundedBody, PortalError, portalSpec, services, targetUrl, upstreamHeaders } from "./portal/portal.service.js";
 
-export function createApp(options: { verify?: (token: string) => Promise<void>; fetch?: typeof fetch } = {}) {
+export function createApp(options: { verify?: (token: string) => Promise<void>; fetch?: typeof fetch; access?: (token: string) => Promise<void> } = {}) {
   const app = Fastify({ bodyLimit: 10 * 1024 * 1024, logger: false });
   const upstream = options.fetch ?? fetch;
   app.removeAllContentTypeParsers();
@@ -11,6 +11,16 @@ export function createApp(options: { verify?: (token: string) => Promise<void>; 
     const status = error instanceof PortalError ? error.status : (typeof error === "object" && error !== null && "statusCode" in error && error.statusCode === 413 ? 413 : 502);
     reply.code(status).send({ message: error instanceof PortalError ? error.message : "Serviço temporariamente indisponível." });
   });
+  // Atrás do Cloudflare Access: toda rota, exceto a sonda de saúde do Render, exige o JWT do Access.
+  if (options.access) {
+    const verifyAccess = options.access;
+    app.addHook("onRequest", async (request, reply) => {
+      if (request.url === "/health") return;
+      const token = request.headers["cf-access-jwt-assertion"];
+      try { await verifyAccess(typeof token === "string" ? token : ""); }
+      catch { return reply.code(403).header("Cache-Control", "no-store").send({ message: "Acesso permitido somente pelo Cloudflare Access." }); }
+    });
+  }
   app.get("/health", async () => ({ status: "ok" }));
   app.register(async portal => {
     portal.addHook("onRequest", async (request, reply) => {
