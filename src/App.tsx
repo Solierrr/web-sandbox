@@ -10,8 +10,11 @@ import LoginPage from "./features/access/pages/LoginPage";
 import CatalogPage from "./features/catalog/pages/CatalogPage";
 
 const KeepalivePage = lazy(() => import("./features/keepalive/pages/KeepalivePage"));
-// Tela do fluxo de IA: reservada, será implementada por outra pessoa.
-// const AiFlowPage = lazy(() => import("./features/ai/pages/AiFlowPage"));
+const SimulatorPage = lazy(() => import("./features/ai/pages/SimulatorPage"));
+const PlaygroundPage = lazy(() => import("./features/ai/pages/PlaygroundPage"));
+const ConversationsPage = lazy(() => import("./features/ai/pages/ConversationsPage"));
+const ConversationPage = lazy(() => import("./features/ai/pages/ConversationPage"));
+const DashboardsPage = lazy(() => import("./features/ai/pages/DashboardsPage"));
 
 function Portal() {
   const session = useSyncExternalStore(subscribe, getSession);
@@ -27,7 +30,14 @@ function Portal() {
           items: [
             { to: "/", label: "Catálogo", icon: "home" },
             { to: "/keepalive", label: "Keepalive", icon: "refresh" },
-            // { to: "/ia", label: "Fluxo de IA", icon: "sparkles" },
+          ],
+        },
+        {
+          title: "Fluxo de IA",
+          items: [
+            { to: "/ia/simulador", label: "Simulador", icon: "sparkles" },
+            { to: "/ia/conversas", label: "Conversas", icon: "messages" },
+            { to: "/ia/dashboards", label: "Dashboards", icon: "chart" },
           ],
         },
       ]}
@@ -36,7 +46,12 @@ function Portal() {
         <Routes>
           <Route path="/" element={<CatalogPage />} />
           <Route path="/keepalive" element={<KeepalivePage />} />
-          {/* <Route path="/ia" element={<AiFlowPage />} /> */}
+          <Route path="/ia" element={<Navigate to="/ia/simulador" replace />} />
+          <Route path="/ia/simulador" element={<SimulatorPage />} />
+          <Route path="/ia/playground" element={<PlaygroundPage />} />
+          <Route path="/ia/conversas" element={<ConversationsPage />} />
+          <Route path="/ia/conversas/:sessionId" element={<ConversationPage />} />
+          <Route path="/ia/dashboards" element={<DashboardsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>

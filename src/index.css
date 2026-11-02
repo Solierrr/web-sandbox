@@ -29,3 +29,7 @@ textarea:focus-visible {
 pre {
   font-family: ui-monospace, monospace;
 }
+.composer-clean textarea:focus,
+.composer-clean textarea:focus-visible {
+  outline: none;
+}
