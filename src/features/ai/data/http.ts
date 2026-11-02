@@ -205,7 +205,7 @@ function baseUrl(environment: EnvId) {
 async function problemDetail(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as { detail?: unknown };
-    return typeof body.detail === "string" ? body.detail.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() : "";
+    return typeof body.detail === "string" ? body.detail.replace(/<[^<>]*>/g, " ").replace(/\s+/g, " ").trim() : "";
   } catch {
     return "";
   }

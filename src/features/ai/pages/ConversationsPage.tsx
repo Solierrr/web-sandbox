@@ -28,7 +28,7 @@ export default function ConversationsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    source
+    void source
       .listConversations({ filters, ...applied, limit: LIST_LIMIT })
       .then((items) => ({ items }) as Result)
       .catch(

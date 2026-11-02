@@ -34,7 +34,7 @@ export function summarize(items: ConversationSummary[], from: string, to: string
       errors: rows.filter((item) => item.error).length,
     });
   }
-  const byAssistant: AssistantRow[] = [...new Set(items.map((item) => item.assistant))].sort().map((assistant) => {
+  const byAssistant: AssistantRow[] = [...new Set(items.map((item) => item.assistant))].sort((a, b) => a.localeCompare(b)).map((assistant) => {
     const rows = items.filter((item) => item.assistant === assistant);
     return {
       assistant,
