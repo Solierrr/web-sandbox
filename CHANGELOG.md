@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0](https://github.com/Solierrr/web-sandbox/compare/v0.4.0...v0.5.0) (2026-11-02)
+
+
+### Features
+
+* add api-notify and infra-grafana to the catalog ([#16](https://github.com/Solierrr/web-sandbox/issues/16)) ([0d7a55c](https://github.com/Solierrr/web-sandbox/commit/0d7a55c094b4efc3b39f58e63cc6bedb668ddeea))
+* add authenticated qa swagger portal ([#14](https://github.com/Solierrr/web-sandbox/issues/14)) ([cefd75b](https://github.com/Solierrr/web-sandbox/commit/cefd75b63bf03a1a47f43ffb8f20970d5f3da32b))
+* add cost per resolution and roi to the dashboards ([#25](https://github.com/Solierrr/web-sandbox/issues/25)) ([f9e3c1d](https://github.com/Solierrr/web-sandbox/commit/f9e3c1d56cba5f4b4525a760e9b0e44954e63906))
+* add the ai flow screens and the admin guide ([#23](https://github.com/Solierrr/web-sandbox/issues/23)) ([af4d418](https://github.com/Solierrr/web-sandbox/commit/af4d418428c12ecd46441de4db0a3ae81660ac90))
+* require the cloudflare access token on every request ([#19](https://github.com/Solierrr/web-sandbox/issues/19)) ([7940598](https://github.com/Solierrr/web-sandbox/commit/7940598c10b8112eb37cff161f7737072abb5e65))
+
+
+### Bug Fixes
+
+* show a generic error when the login request fails ([#17](https://github.com/Solierrr/web-sandbox/issues/17)) ([a8b07dd](https://github.com/Solierrr/web-sandbox/commit/a8b07dd2ef792e9f25a756aaf736e0ae07c3d576))
+
 ## [0.4.0](https://github.com/Solierrr/web-sandbox/compare/v0.3.0...v0.4.0) (2026-10-26)
 
 
