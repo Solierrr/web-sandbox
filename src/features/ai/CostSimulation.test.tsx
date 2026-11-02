@@ -10,6 +10,7 @@ const basisOf = (overrides: Partial<CostBasis> = {}): CostBasis => ({
   to: "2026-10-14",
   conversations: 40,
   pricedConversations: 40,
+  resolvedConversations: 40,
   users: 10,
   costUsd: 2,
   costP50: 0.04,
@@ -76,7 +77,7 @@ describe("CostSimulation", () => {
   });
 
   it("sem usuários distintos suficientes parte de 1 conversa por usuário e avisa", () => {
-    render(<CostSimulation basis={basisOf({ conversations: 30, pricedConversations: 30, users: 1, costUsd: 3, costP50: 0.1, costP95: 0.1, weeks: 1 })} />);
+    render(<CostSimulation basis={basisOf({ conversations: 30, pricedConversations: 30, resolvedConversations: 30, users: 1, costUsd: 3, costP50: 0.1, costP95: 0.1, weeks: 1 })} />);
 
     expect((screen.getByLabelText("Conversas por usuário por semana") as HTMLInputElement).value).toBe("1");
     expect(screen.getByText(/não dá para medir, então o ponto de partida é 1 por semana/)).toBeTruthy();
@@ -85,7 +86,7 @@ describe("CostSimulation", () => {
   });
 
   it("sem conversas no período pede o custo e mostra traço até informar", () => {
-    render(<CostSimulation basis={basisOf({ conversations: 0, pricedConversations: 0, users: 0, costUsd: 0, costP50: 0, costP95: 0, weeks: 1 })} />);
+    render(<CostSimulation basis={basisOf({ conversations: 0, pricedConversations: 0, resolvedConversations: 0, users: 0, costUsd: 0, costP50: 0, costP95: 0, weeks: 1 })} />);
 
     expect(screen.getAllByText(/Nenhuma conversa com custo registrado no período/).length).toBeGreaterThan(0);
     expect(within(scenario(100)!).getAllByText("-").length).toBeGreaterThan(0);
@@ -123,5 +124,33 @@ describe("CostSimulation", () => {
     expect(cost()).toBe("0.12");
     fireEvent.click(screen.getByRole("button", { name: "Usar a média como custo médio por conversa" }));
     expect(cost()).toBe("0.05");
+  });
+  it("mostra resoluções, custo por resolução e ROI em cada cenário", () => {
+    render(<CostSimulation basis={basisOf({ resolvedConversations: 32 })} />);
+
+    expect((screen.getByLabelText("Taxa de resolução") as HTMLInputElement).value).toBe("80");
+    expect(within(scenario(100)!).getByText("160")).toBeTruthy();
+    expect(within(scenario(1000)!).getByText("1.600")).toBeTruthy();
+    expect(within(scenario(100)!).getByText("US$ 0.0625")).toBeTruthy();
+    expect(within(scenario(100)!).getByText("Informe o custo de um atendimento humano")).toBeTruthy();
+  });
+
+  it("calcula o ROI quando o custo de um atendimento humano é informado", () => {
+    render(<CostSimulation basis={basisOf({ resolvedConversations: 32 })} />);
+
+    fireEvent.change(screen.getByLabelText("Custo de um atendimento humano"), { target: { value: "2" } });
+
+    expect(within(scenario(100)!).getByText("3100.0%")).toBeTruthy();
+    expect(within(scenario(100)!).queryByText("Informe o custo de um atendimento humano")).toBeNull();
+  });
+
+  it("muda as resoluções quando a taxa é editada e volta ao observado", () => {
+    render(<CostSimulation basis={basisOf({ resolvedConversations: 32 })} />);
+
+    fireEvent.change(screen.getByLabelText("Taxa de resolução"), { target: { value: "50" } });
+    expect(within(scenario(100)!).getByText("100")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Voltar às premissas calculadas com os dados do período" }));
+    expect(within(scenario(100)!).getByText("160")).toBeTruthy();
   });
 });

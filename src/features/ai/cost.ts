@@ -8,6 +8,7 @@ export interface CostBasis {
   to: string;
   conversations: number;
   pricedConversations: number;
+  resolvedConversations: number;
   users: number;
   costUsd: number;
   costP50: number;
@@ -21,6 +22,7 @@ export interface CostOrigin {
   conversations: number;
   priced: number;
   unpriced: number;
+  resolved: number;
   totalUsd: number;
   average: number | null;
   averageAll: number | null;
@@ -30,6 +32,8 @@ export interface CostOrigin {
 
 export interface CostPremises {
   costPerConversation: number | null;
+  resolutionRate: number | null;
+  costPerResolution: number | null;
   conversationsPerUserWeek: number | null;
   observedUsers: number;
   origin: CostOrigin;
@@ -52,6 +56,8 @@ export function observedPremises(basis: CostBasis): CostPremises {
   const hasUsers = hasConversations && basis.users >= 2;
   return {
     costPerConversation: hasPriced ? basis.costUsd / basis.pricedConversations : null,
+    resolutionRate: basis.conversations > 0 ? basis.resolvedConversations / basis.conversations : null,
+    costPerResolution: basis.resolvedConversations > 0 ? basis.costUsd / basis.resolvedConversations : null,
     conversationsPerUserWeek: hasUsers ? basis.conversations / basis.users / basis.weeks : null,
     observedUsers: basis.users,
     origin: {
@@ -60,6 +66,7 @@ export function observedPremises(basis: CostBasis): CostPremises {
       conversations: basis.conversations,
       priced: basis.pricedConversations,
       unpriced: basis.conversations - basis.pricedConversations,
+      resolved: basis.resolvedConversations,
       totalUsd: basis.costUsd,
       average: hasPriced ? basis.costUsd / basis.pricedConversations : null,
       averageAll: basis.conversations > 0 ? basis.costUsd / basis.conversations : null,
@@ -73,6 +80,34 @@ export function projectCost(users: number, conversationsPerUserWeek: number, cos
   const perUserWeekly = conversationsPerUserWeek * costPerConversation;
   const weekly = users * perUserWeekly;
   return { weekly, monthly: weekly * WEEKS_PER_MONTH, perUserWeekly };
+}
+
+export interface ReturnProjection {
+  resolutionsWeekly: number;
+  costPerResolution: number | null;
+  roi: number | null;
+}
+
+export function projectReturn(
+  users: number,
+  conversationsPerUserWeek: number,
+  costPerConversation: number,
+  resolutionRate: number,
+  humanCostPerResolution: number | null,
+): ReturnProjection {
+  const conversationsWeekly = users * conversationsPerUserWeek;
+  const resolutionsWeekly = conversationsWeekly * resolutionRate;
+  const weeklyCost = conversationsWeekly * costPerConversation;
+  return {
+    resolutionsWeekly,
+    costPerResolution: resolutionsWeekly > 0 ? weeklyCost / resolutionsWeekly : null,
+    roi: humanCostPerResolution !== null && weeklyCost > 0 ? (resolutionsWeekly * humanCostPerResolution - weeklyCost) / weeklyCost : null,
+  };
+}
+
+export function parseRate(text: string): number | null {
+  const value = parsePositive(text);
+  return value !== null && value <= 100 ? value / 100 : null;
 }
 
 export function parseScenario(text: string): number | null {

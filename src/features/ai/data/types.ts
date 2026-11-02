@@ -66,6 +66,7 @@ export interface DashboardData {
     conversations: number;
     users: number;
     pricedConversations: number;
+    resolvedConversations: number;
     nps: number | null;
     costUsd: number;
     costP50: number;

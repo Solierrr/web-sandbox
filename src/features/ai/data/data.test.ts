@@ -94,6 +94,28 @@ describe("summarize: usuários distintos", () => {
   });
 });
 
+describe("summarize: resoluções", () => {
+  const item = (sessionId: string, overrides: { error?: boolean; messageCount?: number }) => ({
+    sessionId, userId: "u", assistant: "assistant", environment: "QA" as const, startedAt: "2026-10-02T10:00:00Z",
+    messageCount: 2, firstMessage: "oi", nps: null, costUsd: 0.01, latencyMs: 1000, error: false, ...overrides,
+  });
+
+  it("conta como resolvida a conversa sem erro e com resposta do assistente", () => {
+    const result = summarize(
+      [item("a", {}), item("b", { error: true }), item("c", { messageCount: 1 }), item("d", { messageCount: 6 })],
+      "2026-10-01",
+      "2026-10-07",
+    );
+
+    expect(result.totals.conversations).toBe(4);
+    expect(result.totals.resolvedConversations).toBe(2);
+  });
+
+  it("sem conversas não há resoluções", () => {
+    expect(summarize([], "2026-10-01", "2026-10-07").totals.resolvedConversations).toBe(0);
+  });
+});
+
 describe("summarize: custo por conversa", () => {
   const item = (sessionId: string, costUsd: number) => ({
     sessionId, userId: "u", assistant: "assistant", environment: "QA" as const, startedAt: "2026-10-02T10:00:00Z",
