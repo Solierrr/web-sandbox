@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { observedPremises, type CostBasis, parsePositive, parseScenario, periodWeeks, projectCost, scenarioList, WEEKS_PER_MONTH } from "./cost";
+import { observedPremises, type CostBasis, parsePositive, parseRate, parseScenario, periodWeeks, projectCost, projectReturn, scenarioList, WEEKS_PER_MONTH } from "./cost";
 
 describe("periodWeeks", () => {
   it("conta o primeiro e o último dia do período", () => {
@@ -19,6 +19,7 @@ const basisOf = (overrides: Partial<CostBasis>): CostBasis => ({
   to: "2026-10-14",
   conversations: 40,
   pricedConversations: 40,
+  resolvedConversations: 38,
   users: 10,
   costUsd: 2,
   costP50: 0.04,
@@ -37,17 +38,19 @@ describe("observedPremises", () => {
   });
 
   it("com menos de 2 usuários distintos não mede conversas por usuário", () => {
-    const premises = observedPremises(basisOf({ conversations: 30, pricedConversations: 30, users: 1, costUsd: 3, weeks: 1 }));
+    const premises = observedPremises(basisOf({ conversations: 30, pricedConversations: 30, resolvedConversations: 30, users: 1, costUsd: 3, weeks: 1 }));
 
     expect(premises.costPerConversation).toBeCloseTo(0.1);
     expect(premises.conversationsPerUserWeek).toBeNull();
   });
 
   it("sem conversas não há premissas", () => {
-    const premises = observedPremises(basisOf({ conversations: 0, pricedConversations: 0, users: 0, costUsd: 0, costP50: 0, costP95: 0, weeks: 1 }));
+    const premises = observedPremises(basisOf({ conversations: 0, pricedConversations: 0, resolvedConversations: 0, users: 0, costUsd: 0, costP50: 0, costP95: 0, weeks: 1 }));
 
     expect(premises.costPerConversation).toBeNull();
     expect(premises.conversationsPerUserWeek).toBeNull();
+    expect(premises.resolutionRate).toBeNull();
+    expect(premises.costPerResolution).toBeNull();
     expect(premises.origin.average).toBeNull();
     expect(premises.origin.median).toBeNull();
     expect(premises.origin.p95).toBeNull();
@@ -73,6 +76,54 @@ describe("observedPremises", () => {
 
     expect(premises.costPerConversation).toBeNull();
     expect(premises.origin.unpriced).toBe(12);
+  });
+});
+
+describe("resolução", () => {
+  it("calcula a taxa de resolução e o custo por resolução com o custo de todas as conversas", () => {
+    const premises = observedPremises(basisOf({}));
+
+    expect(premises.resolutionRate).toBeCloseTo(0.95);
+    expect(premises.costPerResolution).toBeCloseTo(2 / 38);
+    expect(premises.origin.resolved).toBe(38);
+  });
+
+  it("sem nenhuma resolução não há custo por resolução", () => {
+    const premises = observedPremises(basisOf({ resolvedConversations: 0 }));
+
+    expect(premises.resolutionRate).toBe(0);
+    expect(premises.costPerResolution).toBeNull();
+  });
+});
+
+describe("projectReturn", () => {
+  it("custo por resolução é o custo semanal dividido pelas resoluções", () => {
+    const result = projectReturn(100, 2, 0.05, 0.8, null);
+
+    expect(result.resolutionsWeekly).toBeCloseTo(160);
+    expect(result.costPerResolution).toBeCloseTo(0.05 / 0.8);
+    expect(result.roi).toBeNull();
+  });
+
+  it("ROI é o retorno das resoluções menos o custo da IA, dividido pelo custo da IA", () => {
+    const result = projectReturn(100, 2, 0.05, 0.8, 2);
+
+    expect(result.roi).toBeCloseTo((160 * 2 - 10) / 10);
+  });
+
+  it("ROI fica negativo quando o atendimento humano evitado custa menos que a IA", () => {
+    expect(projectReturn(100, 2, 0.05, 0.8, 0.01).roi).toBeLessThan(0);
+  });
+
+  it("sem resoluções ou sem custo não há custo por resolução nem ROI", () => {
+    expect(projectReturn(100, 2, 0.05, 0, 2).costPerResolution).toBeNull();
+    expect(projectReturn(100, 2, 0, 0.8, 2).roi).toBeNull();
+  });
+
+  it("a taxa vem em porcentagem de 0 a 100", () => {
+    expect(parseRate("95")).toBeCloseTo(0.95);
+    expect(parseRate("0,5")).toBeCloseTo(0.005);
+    for (const invalid of ["", "0", "101", "-1", "abc"]) expect(parseRate(invalid)).toBeNull();
   });
 });
 

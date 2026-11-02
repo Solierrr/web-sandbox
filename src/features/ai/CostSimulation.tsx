@@ -7,12 +7,14 @@ import {
   WEEKS_PER_MONTH,
   observedPremises,
   parsePositive,
+  parseRate,
   parseScenario,
   projectCost,
+  projectReturn,
   scenarioList,
   type CostBasis,
 } from "./cost";
-import { usd } from "./format";
+import { percent, usd } from "./format";
 
 const trimmed = (value: number, digits: number) => String(Number(value.toFixed(digits)));
 const count = (value: number) => value.toLocaleString("pt-BR");
@@ -21,6 +23,8 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
   const origin = observed.origin;
   const [costText, setCostText] = useState<string | null>(null);
   const [convText, setConvText] = useState<string | null>(null);
+  const [rateText, setRateText] = useState<string | null>(null);
+  const [humanText, setHumanText] = useState("");
   const [extra, setExtra] = useState<number[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
@@ -28,7 +32,10 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
   const fallbackConversations = observed.conversationsPerUserWeek ?? 1;
   const cost = costText === null ? observed.costPerConversation : parsePositive(costText);
   const conversations = convText === null ? fallbackConversations : parsePositive(convText);
-  const edited = costText !== null || convText !== null;
+  const observedRate = observed.resolutionRate === null ? null : trimmed(observed.resolutionRate * 100, 1);
+  const rate = rateText === null ? observed.resolutionRate : parseRate(rateText);
+  const human = humanText.trim() === "" ? null : parsePositive(humanText);
+  const edited = costText !== null || convText !== null || rateText !== null;
   const scenarios = scenarioList(extra);
 
   function addScenario() {
@@ -47,6 +54,9 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
         <p className="text-xs opacity-70">
           Custo semanal = usuários × conversas por usuário por semana × custo médio por conversa. O mês usa {WEEKS_PER_MONTH.toFixed(2).replace(".", ",")} semanas.
           Considera só o custo que o histórico registra por conversa (as chamadas de LLM); hospedagem e outros serviços ficam de fora.
+        </p>
+        <p className="text-xs opacity-70">
+          Resolução é a conversa sem erro e com resposta do assistente. Custo por resolução = custo das conversas ÷ resoluções. ROI = (resoluções × custo de um atendimento humano − custo da IA) ÷ custo da IA.
         </p>
       </div>
 
@@ -69,6 +79,25 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
             onChange={(event) => setConvText(event.target.value)}
           />
         </Field>
+        <Field label="Taxa de resolução (%)">
+          <Input
+            name="Taxa de resolução"
+            type="number"
+            className="w-full"
+            value={rateText ?? observedRate ?? ""}
+            onChange={(event) => setRateText(event.target.value)}
+          />
+        </Field>
+        <Field label="Custo de um atendimento humano (US$)">
+          <Input
+            name="Custo de um atendimento humano"
+            type="number"
+            className="w-full"
+            placeholder="Ex: 2.50"
+            value={humanText}
+            onChange={(event) => setHumanText(event.target.value)}
+          />
+        </Field>
         {edited && (
           <div className="flex items-end">
             <WhiteButton
@@ -77,6 +106,7 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
               action={() => {
                 setCostText(null);
                 setConvText(null);
+                setRateText(null);
               }}
             />
           </div>
@@ -124,6 +154,7 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
       <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }} aria-label="Cenários de custo">
         {scenarios.map((users) => {
           const result = cost !== null && conversations !== null ? projectCost(users, conversations, cost) : null;
+          const returned = cost !== null && conversations !== null && rate !== null ? projectReturn(users, conversations, cost, rate, human) : null;
           const removable = !DEFAULT_SCENARIOS.includes(users);
           return (
             <div key={users} className="flex flex-col gap-2 rounded-lg border border-black/10 p-4" data-scenario={users}>
@@ -145,6 +176,13 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
               <span className="text-xs uppercase tracking-wide opacity-70">Por mês</span>
               <span className="text-lg font-semibold">{result ? usd(result.monthly) : "-"}</span>
               <span className="text-xs opacity-70">{result ? `${usd(result.perUserWeekly)} por usuário por semana` : "Informe as premissas acima"}</span>
+              <span className="text-xs uppercase tracking-wide opacity-70">Resoluções por semana</span>
+              <span className="text-lg font-semibold">{returned ? count(Math.round(returned.resolutionsWeekly)) : "-"}</span>
+              <span className="text-xs uppercase tracking-wide opacity-70">Custo por resolução</span>
+              <span className="text-lg font-semibold">{returned?.costPerResolution != null ? usd(returned.costPerResolution) : "-"}</span>
+              <span className="text-xs uppercase tracking-wide opacity-70">ROI</span>
+              <span className="text-lg font-semibold">{returned?.roi != null ? percent(returned.roi) : "-"}</span>
+              {returned && returned.roi === null && <span className="text-xs opacity-70">Informe o custo de um atendimento humano</span>}
             </div>
           );
         })}

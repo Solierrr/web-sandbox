@@ -19,6 +19,8 @@ const sum = (items: ConversationSummary[], pick: (item: ConversationSummary) => 
 
 export const MAX_CHART_DAYS = 92;
 
+export const isResolved = (item: ConversationSummary) => !item.error && item.messageCount >= 2;
+
 export function summarize(items: ConversationSummary[], from: string, to: string): DashboardData {
   const byDay: DayPoint[] = [];
   const end = Date.parse(to);
@@ -51,6 +53,7 @@ export function summarize(items: ConversationSummary[], from: string, to: string
       conversations: items.length,
       users: new Set(items.map((item) => item.userId)).size,
       pricedConversations: pricedCosts.length,
+      resolvedConversations: items.filter(isResolved).length,
       nps: npsOf(items.map((item) => item.nps)),
       costUsd: sum(items, (item) => item.costUsd),
       costP50: percentile(pricedCosts, 50),

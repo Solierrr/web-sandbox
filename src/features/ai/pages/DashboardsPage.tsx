@@ -167,6 +167,12 @@ export default function DashboardsPage() {
                 value={state.data.totals.pricedConversations > 0 ? usd(state.data.totals.costUsd / state.data.totals.pricedConversations) : "-"}
                 hint="Só conversas com custo registrado"
               />
+              <Kpi label="Resoluções" value={state.data.totals.resolvedConversations} hint="Conversas sem erro e com resposta do assistente" />
+              <Kpi
+                label="Custo por resolução"
+                value={state.data.totals.resolvedConversations > 0 ? usd(state.data.totals.costUsd / state.data.totals.resolvedConversations) : "-"}
+                hint="Custo das conversas dividido pelas resoluções"
+              />
               <Kpi label="Taxa de erro" value={percent(state.data.totals.errorRate)} />
               <Kpi label="Latência p50" value={formatMs(state.data.totals.p50Ms)} />
               <Kpi label="Latência p95" value={formatMs(state.data.totals.p95Ms)} />
@@ -216,6 +222,7 @@ export default function DashboardsPage() {
                 to: filters.to,
                 conversations: state.data.totals.conversations,
                 pricedConversations: state.data.totals.pricedConversations,
+                resolvedConversations: state.data.totals.resolvedConversations,
                 users: state.data.totals.users,
                 costUsd: state.data.totals.costUsd,
                 costP50: state.data.totals.costP50,
