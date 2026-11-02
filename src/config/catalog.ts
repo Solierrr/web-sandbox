@@ -127,12 +127,12 @@ function kindOf(id: string): KindId {
   return "service";
 }
 
-function qaUrl(id: string) {
+export function qaUrl(id: string) {
   const configured = id === "api-auth" ? authUrl : services.find((service) => service.id === id)?.url;
   return externalUrl(env[envName(id, "QA")] || configured || RENDER_QA[id] || "");
 }
 
-function prodUrl(id: string) {
+export function prodUrl(id: string) {
   if (NO_PROD.has(id)) return undefined;
   return externalUrl(env[envName(id, "PROD")] || PROD_HOSTS[id] || `https://${id.replace(/^(api|ai)-/, "")}.${PROD_DOMAIN}`);
 }
