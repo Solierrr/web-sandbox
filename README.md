@@ -27,6 +27,7 @@ A interface React usa uma biblioteca visual compartilhada e um servidor próprio
 - [RUNNING.md](./docs/RUNNING.md), preparação e execução local.
 - [API.md](./docs/API.md), autenticação e uso do contrato.
 - [SCREENS.md](./docs/SCREENS.md), detalhes do fluxo ou modelo de dados.
+- [ADMIN.md](./docs/ADMIN.md), uso do ambiente de administrador: Simulador, Conversas, Playground e Dashboards.
 - [DEPLOY.md](./docs/DEPLOY.md), ambientes e publicação.
 - [STATUS.md](./docs/STATUS.md), limites observados.
 - [Fluxos](./flows/), etapas e casos de erro do repositório.
