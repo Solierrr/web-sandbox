@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { changedPrompts, isEditable, lastUserMessage, promptParts, rebuildPrompt } from "./custom";
+import { changedPrompts, editableMessageIndexes, isEditable, lastUserMessage, promptParts, rebuildPrompt } from "./custom";
 import type { DebugNode } from "./trace";
 
 const node = (prompt: unknown): DebugNode => ({
@@ -62,6 +62,37 @@ describe("custom", () => {
     it("sem mensagem do usuário devolve null", () => {
       expect(lastUserMessage([])).toBeNull();
       expect(lastUserMessage([{ role: "assistant", text: "oi" }])).toBeNull();
+    });
+  });
+
+  describe("editableMessageIndexes", () => {
+    const conversa = [
+      { role: "user", text: "o que voce faz ?" },
+      { role: "assistant", text: "Sou o assistente." },
+      { role: "user", text: "o que a solaria é?" },
+      { role: "assistant", text: "resposta final do turno" },
+    ];
+
+    it("quando a posição bate com a do nó, todas as mensagens até a última do usuário são editáveis", () => {
+      expect(editableMessageIndexes({ message_count: 3 }, conversa, false)).toEqual({ indexes: [0, 1, 2], lastIndex: 2 });
+    });
+
+    it("a resposta final do turno não faz parte da entrada do nó e nunca é editável", () => {
+      expect(editableMessageIndexes({ message_count: 3 }, conversa, false).indexes).not.toContain(3);
+    });
+
+    it("sem message_count, ou com contagem diferente, só a última do usuário é editável", () => {
+      expect(editableMessageIndexes({}, conversa, false)).toEqual({ indexes: [2], lastIndex: 2 });
+      expect(editableMessageIndexes({ message_count: 2 }, conversa, false)).toEqual({ indexes: [2], lastIndex: 2 });
+      expect(editableMessageIndexes(null, conversa, false)).toEqual({ indexes: [2], lastIndex: 2 });
+    });
+
+    it("com resumo da conversa, as posições não batem e só a última do usuário é editável", () => {
+      expect(editableMessageIndexes({ message_count: 3 }, conversa, true)).toEqual({ indexes: [2], lastIndex: 2 });
+    });
+
+    it("sem mensagem do usuário não há o que editar", () => {
+      expect(editableMessageIndexes({ message_count: 1 }, [{ role: "assistant", text: "oi" }], false)).toEqual({ indexes: [], lastIndex: null });
     });
   });
 

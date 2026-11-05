@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Checkbox, PrimaryButton, Textarea, WhiteButton } from "@solaria.network/web-lib";
 import { Field, Json, Notice } from "./components";
 import { nodeConversation, type NodeConversation } from "./conversation";
-import { draftKey, isEditable, lastUserMessage, promptParts, type Drafts } from "./custom";
+import { draftKey, editableMessageIndexes, isEditable, promptParts, type Drafts } from "./custom";
 import type { PlaygroundMessage } from "./playground";
 import {
   formatMs,
@@ -32,8 +32,8 @@ export interface NodeEditor {
   error: string;
   demo?: boolean;
   onDraft: (nodeIndex: number, callIndex: number, partIndex: number, value: string, original: string[]) => void;
-  inputDrafts?: Record<number, string>;
-  onInputDraft?: (nodeIndex: number, value: string) => void;
+  inputDrafts?: Record<number, Record<number, string>>;
+  onInputDraft?: (nodeIndex: number, messageIndex: number, value: string) => void;
   onRun: (nodeIndex: number) => void;
   onReset: (nodeIndex: number) => void;
 }
@@ -53,6 +53,19 @@ export function StepsView({ debug, userMessage, answer, agents, editor, history 
   const index = Math.min(selected, last);
   const rerun = editor?.reran[index];
   const node: DebugNode | undefined = rerun ?? debug.nodes[index];
+  const conversation = node ? nodeConversation(node.input, history) : { summary: null, messages: [] };
+  const { indexes: editableIndexes, lastIndex } = editableMessageIndexes(node?.input, conversation.messages, conversation.summary !== null);
+  const messageEditor: MessageEditor | undefined =
+    node && editor?.enabled && !rerun && editor.onInputDraft && !editor.unavailable && !editor.blockedReason?.(node.node) && editableIndexes.length > 0
+      ? {
+          indexes: new Set(editableIndexes),
+          lastIndex,
+          drafts: editor.inputDrafts?.[index],
+          onChange: (messageIndex, value) => editor.onInputDraft?.(index, messageIndex, value),
+        }
+      : undefined;
+  // As mensagens da conversa já aparecem (editáveis) em cima; no prompt elas só repetiriam o mesmo texto.
+  const conversationTexts = new Set(conversation.messages.map((message) => message.text.trim()));
   const total = totalTokens(debug);
   const turnTools = [
     ...turnToolCalls(debug)
@@ -136,14 +149,7 @@ export function StepsView({ debug, userMessage, answer, agents, editor, history 
                   (editor.next[index].length > 0 ? ` O próximo nó seria: ${editor.next[index].join(", ")}.` : " Este era o último nó.")}
               </Notice>
             )}
-            <ConversationView
-              conversation={nodeConversation(node.input, history)}
-              editable={
-                editor?.enabled && !rerun && editor.onInputDraft && !editor.unavailable && !editor.blockedReason?.(node.node)
-                  ? { value: editor.inputDrafts?.[index], onChange: (value) => editor.onInputDraft?.(index, value) }
-                  : undefined
-              }
-            />
+            <ConversationView conversation={conversation} editable={messageEditor} />
             <Field label="Entrada">
               <Json value={node.input} />
             </Field>
@@ -155,7 +161,7 @@ export function StepsView({ debug, userMessage, answer, agents, editor, history 
                 </p>
                 {call.error && <p className="text-sm text-red-700">{call.error}</p>}
                 {editor?.enabled && promptParts(call.prompt) && (call.prompt_complete === true || editor.demo) ? (
-                  <PromptEditor editor={editor} nodeIndex={index} callIndex={callIndex} prompt={call.prompt} />
+                  <PromptEditor editor={editor} nodeIndex={index} callIndex={callIndex} prompt={call.prompt} hideTexts={conversationTexts} />
                 ) : (
                   <Field label="Prompt">
                     <Json value={call.prompt} />
@@ -236,14 +242,26 @@ export function StepsView({ debug, userMessage, answer, agents, editor, history 
   );
 }
 
-function PromptEditor({ editor, nodeIndex, callIndex, prompt }: { editor: NodeEditor; nodeIndex: number; callIndex: number; prompt: unknown }) {
+function PromptEditor({
+  editor,
+  nodeIndex,
+  callIndex,
+  prompt,
+  hideTexts,
+}: {
+  editor: NodeEditor;
+  nodeIndex: number;
+  callIndex: number;
+  prompt: unknown;
+  hideTexts: Set<string>;
+}) {
   const parts = promptParts(prompt) ?? [];
   const original = parts.map((part) => part.content);
   const values = editor.drafts[draftKey(nodeIndex, callIndex)] ?? original;
   return (
     <div className="flex flex-col gap-2">
       {parts.map((part, partIndex) =>
-        isEditable(part) ? (
+        (part.type === "human" || part.type === "ai") && part.editable === undefined && hideTexts.has(part.content.trim()) ? null : isEditable(part) ? (
           <Field key={partIndex} label={`Prompt · ${part.type}`}>
             <Textarea
               name={`Prompt ${part.type} do nó ${nodeIndex + 1}`}
@@ -263,15 +281,15 @@ function PromptEditor({ editor, nodeIndex, callIndex, prompt }: { editor: NodeEd
   );
 }
 
-function ConversationView({
-  conversation,
-  editable,
-}: {
-  conversation: NodeConversation;
-  editable?: { value: string | undefined; onChange: (value: string) => void };
-}) {
+interface MessageEditor {
+  indexes: Set<number>;
+  lastIndex: number | null;
+  drafts: Record<number, string> | undefined;
+  onChange: (messageIndex: number, value: string) => void;
+}
+
+function ConversationView({ conversation, editable }: { conversation: NodeConversation; editable?: MessageEditor }) {
   if (!conversation.summary && conversation.messages.length === 0) return null;
-  const editing = editable ? lastUserMessage(conversation.messages) : null;
   return (
     <Field label={conversation.summary ? "Conversa (resumida)" : "Conversa"}>
       <div className="flex flex-col gap-2">
@@ -282,15 +300,24 @@ function ConversationView({
           </div>
         )}
         {conversation.messages.map((message, position) =>
-          editable && editing?.index === position ? (
-            <div key={position} className="flex flex-col gap-1 rounded-lg border-l-4 border-[#FF6500] bg-black/5 px-3 py-2">
-              <span className="block text-xs font-bold uppercase tracking-wide opacity-70">Usuário (editável)</span>
+          editable?.indexes.has(position) ? (
+            <div
+              key={position}
+              className={`flex flex-col gap-1 rounded-lg bg-black/5 px-3 py-2 ${message.role === "user" ? "border-l-4 border-[#FF6500]" : ""}`}
+            >
+              <span className="block text-xs font-bold uppercase tracking-wide opacity-70">
+                {message.role === "user" ? "Usuário" : "Assistente"} (editável)
+              </span>
               <Textarea
-                name={`Mensagem do usuário do nó`}
+                name={
+                  message.role === "user" && position === editable.lastIndex
+                    ? "Mensagem do usuário do nó"
+                    : `Mensagem ${position + 1} (${message.role === "user" ? "usuário" : "assistente"}) do nó`
+                }
                 className="w-full"
-                rows={Math.min(10, Math.max(2, (editable.value ?? message.text).split("\n").length))}
-                value={editable.value ?? message.text}
-                onChange={(event) => editable.onChange(event.target.value)}
+                rows={Math.min(10, Math.max(2, (editable.drafts?.[position] ?? message.text).split("\n").length))}
+                value={editable.drafts?.[position] ?? message.text}
+                onChange={(event) => editable.onChange(position, event.target.value)}
               />
             </div>
           ) : (

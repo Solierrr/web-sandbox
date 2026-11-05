@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { OperationalPage, StatusField, Surface } from "@solaria.network/web-lib";
 import { Notice } from "../components";
-import { changedPrompts, draftKey, lastUserMessage, promptParts, type Drafts } from "../custom";
+import { changedPrompts, draftKey, editableMessageIndexes, promptParts, type Drafts } from "../custom";
 import { nodeConversation } from "../conversation";
 import { demoRerun } from "../data/mock";
 import { runDebug, type CustomRun, type DebugInput, type DebugOutcome } from "../debug.service";
@@ -20,7 +20,7 @@ function Steps({ run }: { run: PlaygroundRun }) {
   const debug = outcome.debug;
   const [enabled, setEnabled] = useState(false);
   const [drafts, setDrafts] = useState<Drafts>({});
-  const [inputDrafts, setInputDrafts] = useState<Record<number, string>>({});
+  const [inputDrafts, setInputDrafts] = useState<Record<number, Record<number, string>>>({});
   const [reran, setReran] = useState<Record<number, DebugNode>>({});
   const [next, setNext] = useState<Record<number, string[]>>({});
   const [busy, setBusy] = useState(false);
@@ -28,7 +28,7 @@ function Steps({ run }: { run: PlaygroundRun }) {
   const lastUser = [...run.messages].reverse().find((message) => message.role === "user")?.text ?? "";
   if (!debug || debug.nodes.length === 0) return <p className="text-sm opacity-70">O serviço não registrou passos neste turno.</p>;
 
-  function inputFor(node: string, occurrence: number, prompts: CustomRun["prompts"], extra: Pick<CustomRun, "userMessage" | "state"> = {}): DebugInput | null {
+  function inputFor(node: string, occurrence: number, prompts: CustomRun["prompts"], extra: Pick<CustomRun, "userMessage" | "messages" | "state"> = {}): DebugInput | null {
     const replay = run.replay;
     if (!replay) return null;
     switch (replay.kind) {
@@ -58,20 +58,28 @@ function Steps({ run }: { run: PlaygroundRun }) {
     const original = debug?.nodes[nodeIndex];
     if (!original || busy) return;
     const prompts = changedPrompts(original, nodeIndex, drafts);
-    const shown = lastUserMessage(nodeConversation(original.input, run.messages).messages);
-    const draft = inputDrafts[nodeIndex];
-    if (draft !== undefined && draft.trim() === "") {
-      setError("A mensagem do usuário não pode ficar vazia.");
-      return;
+    const conversation = nodeConversation(original.input, run.messages);
+    const { indexes, lastIndex } = editableMessageIndexes(original.input, conversation.messages, conversation.summary !== null);
+    let userMessage: string | undefined;
+    const messages: { index: number; content: string }[] = [];
+    for (const [key, text] of Object.entries(inputDrafts[nodeIndex] ?? {})) {
+      const position = Number(key);
+      if (!indexes.includes(position) || text === conversation.messages[position]?.text) continue;
+      if (text.trim() === "") {
+        setError("Uma mensagem da conversa não pode ficar vazia.");
+        return;
+      }
+      if (position === lastIndex) userMessage = text;
+      else messages.push({ index: position, content: text });
     }
-    const edits = { userMessage: draft !== undefined && shown && draft !== shown.text ? draft : undefined, state: undefined };
+    const edits = { userMessage, messages: messages.length > 0 ? messages : undefined, state: undefined };
     const occurrence = debug?.nodes.slice(0, nodeIndex).filter((item) => item.node === original.node).length ?? 0;
     setBusy(true);
     setError("");
     let result: DebugNode | null = null;
     let following: string[] | undefined;
     const extraReran: Record<number, DebugNode> = {};
-    const input = run.demo ? null : inputFor(original.node, occurrence, prompts, { userMessage: edits.userMessage, state: edits.state });
+    const input = run.demo ? null : inputFor(original.node, occurrence, prompts, edits);
     if (run.demo) {
       result = demoRerun(original, prompts);
     } else if (!input) {
@@ -141,7 +149,8 @@ function Steps({ run }: { run: PlaygroundRun }) {
             return result;
           }),
         inputDrafts,
-        onInputDraft: (nodeIndex, value) => setInputDrafts((previous) => ({ ...previous, [nodeIndex]: value })),
+        onInputDraft: (nodeIndex, messageIndex, value) =>
+          setInputDrafts((previous) => ({ ...previous, [nodeIndex]: { ...previous[nodeIndex], [messageIndex]: value } })),
         onRun: runNode,
         onReset: (nodeIndex) => {
           setError("");
