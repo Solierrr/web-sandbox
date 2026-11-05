@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { observedPremises, type CostBasis, parsePositive, parseRate, parseScenario, periodWeeks, projectCost, projectReturn, scenarioList, WEEKS_PER_MONTH } from "./cost";
+import { DEFAULT_HUMAN_COST_USD, GARTNER_ASSISTED_CONTACT_USD, observedPremises, type CostBasis, parsePositive, parseRate, parseScenario, periodWeeks, projectCost, projectReturn, scenarioList, WEEKS_PER_MONTH } from "./cost";
 
 describe("periodWeeks", () => {
   it("conta o primeiro e o último dia do período", () => {
@@ -93,6 +93,29 @@ describe("resolução", () => {
 
     expect(premises.resolutionRate).toBe(0);
     expect(premises.costPerResolution).toBeNull();
+  });
+});
+
+describe("custo humano padrão", () => {
+  it("é de US$ 2,00 por atendimento e fica bem abaixo da referência global do Gartner", () => {
+    expect(DEFAULT_HUMAN_COST_USD).toBe(2);
+    expect(GARTNER_ASSISTED_CONTACT_USD).toBe(13.5);
+    expect(DEFAULT_HUMAN_COST_USD).toBeLessThan(GARTNER_ASSISTED_CONTACT_USD);
+  });
+
+  it("bate com a conta de baixo para cima de um atendente de chat no Brasil", () => {
+    const salario = 1800;
+    const custoTotal = salario * 1.7;
+    const horasPagasPorMes = (37 * 52) / 12;
+    const atendimentosPorHoraPaga = 0.55 * (60 / 11);
+    const maoDeObra = custoTotal / horasPagasPorMes / atendimentosPorHoraPaga;
+    const comEstrutura = maoDeObra * 1.4;
+    const emDolar = comEstrutura / 5.15;
+
+    expect(maoDeObra).toBeCloseTo(6.5, 0);
+    expect(emDolar).toBeGreaterThan(1.6);
+    expect(emDolar).toBeLessThan(2.2);
+    expect(Math.round(emDolar)).toBe(DEFAULT_HUMAN_COST_USD);
   });
 });
 

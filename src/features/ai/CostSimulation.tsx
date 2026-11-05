@@ -4,6 +4,8 @@ import { Field, Notice } from "./components";
 import {
   DEFAULT_SCENARIOS,
   MAX_SCENARIO_USERS,
+  DEFAULT_HUMAN_COST_USD,
+  GARTNER_ASSISTED_CONTACT_USD,
   WEEKS_PER_MONTH,
   observedPremises,
   parsePositive,
@@ -24,7 +26,7 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
   const [costText, setCostText] = useState<string | null>(null);
   const [convText, setConvText] = useState<string | null>(null);
   const [rateText, setRateText] = useState<string | null>(null);
-  const [humanText, setHumanText] = useState("");
+  const [humanText, setHumanText] = useState(String(DEFAULT_HUMAN_COST_USD));
   const [extra, setExtra] = useState<number[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
@@ -97,6 +99,18 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
             value={humanText}
             onChange={(event) => setHumanText(event.target.value)}
           />
+          <span className="text-xs opacity-70">
+            Padrão: US$ {DEFAULT_HUMAN_COST_USD.toFixed(2)} (cerca de R$ 10) por atendimento. Estimativa para um atendente de chat/SAC no Brasil: salário médio
+            de R$ 1.800 com 1,7 de encargos, cerca de 3 atendimentos por hora e mais 40% de estrutura. Referência global (Gartner): US$ {GARTNER_ASSISTED_CONTACT_USD.toFixed(2)}.
+            Um atendimento técnico mais longo custa mais.
+          </span>
+          {humanText !== String(DEFAULT_HUMAN_COST_USD) && (
+            <WhiteButton
+              description={`Voltar ao custo padrão de um atendimento humano (US$ ${DEFAULT_HUMAN_COST_USD.toFixed(2)})`}
+              content="Usar o padrão"
+              action={() => setHumanText(String(DEFAULT_HUMAN_COST_USD))}
+            />
+          )}
         </Field>
         {edited && (
           <div className="flex items-end">
