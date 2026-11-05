@@ -19,6 +19,9 @@ export interface CustomRun {
   node: string;
   occurrence: number;
   prompts: { call: number; prompt: { type: string; content: string; editable?: boolean }[] }[];
+  userMessage?: string;
+  messages?: { index: number; content: string }[];
+  state?: Record<string, unknown>;
 }
 
 export type FailureReason =
@@ -47,6 +50,9 @@ function customBody(input: CustomRun, extra: Record<string, unknown>) {
     occurrence: input.occurrence,
     stop_after_node: true,
     prompts: cleanPrompts(input.prompts),
+    ...(input.userMessage !== undefined ? { user_message: input.userMessage } : {}),
+    ...(input.messages && input.messages.length > 0 ? { messages: input.messages } : {}),
+    ...(input.state && Object.keys(input.state).length > 0 ? { state: input.state } : {}),
   };
 }
 

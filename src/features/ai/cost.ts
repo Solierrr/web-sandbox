@@ -1,6 +1,31 @@
 export const DEFAULT_SCENARIOS: readonly number[] = [100, 1000];
 export const MAX_SCENARIO_USERS = 1_000_000;
 export const WEEKS_PER_MONTH = 52 / 12;
+
+/**
+ * Custo padrão de um atendimento humano, em US$, para o ROI.
+ *
+ * Estimativa de baixo para cima para um atendente de chat/SAC no Brasil (2026):
+ * - salário médio de atendente de telemarketing: R$ 1.800 por mês, jornada de 37 h por semana
+ *   (CAGED, via Portal Salário);
+ * - custo total para a empresa: x 1,7 de encargos e provisões do CLT (regra de bolso de 1,7 a 2,0),
+ *   ou seja, cerca de R$ 19 por hora paga;
+ * - 55% de ocupação (a Comm100 cita 50 a 60% como bom) e 11 minutos por chat (Comm100):
+ *   cerca de 3 atendimentos por hora paga, o que dá cerca de R$ 6,50 só de mão de obra;
+ * - mais 40% de supervisão, ferramentas e treinamento (premissa nossa, sem fonte): cerca de R$ 8,90;
+ * - ao câmbio de cerca de R$ 5,15 por dólar: US$ 1,73, arredondado para US$ 2,00.
+ *
+ * Conferência: a planilha de custos do MDS (gov.br) lista "Chat - Atendimento humano" a R$ 9,99
+ * por unidade. É uma estimativa para um atendimento de chat simples: um atendimento técnico mais
+ * longo custa mais, e o valor é editável na tela.
+ */
+export const DEFAULT_HUMAN_COST_USD = 2;
+
+/**
+ * Mediana do Gartner para um contato assistido (telefone, chat ou e-mail) nos EUA, em US$.
+ * Referência global, bem acima do Brasil por causa do custo da mão de obra.
+ */
+export const GARTNER_ASSISTED_CONTACT_USD = 13.5;
 const DAY_MS = 86_400_000;
 
 export interface CostBasis {

@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { OperationalPage, Surface } from "@solaria.network/web-lib";
 import { BarChart } from "../charts";
-import { FilterBar, Notice } from "../components";
+import { Collapsible, FilterBar, Notice } from "../components";
 import { periodWeeks } from "../cost";
 import { CostSimulation } from "../CostSimulation";
+import { RoiExplanation } from "../RoiExplanation";
 import { getDataSource } from "../data/source";
 import { DataUnavailableError, type DashboardData, type LangSmithRow, type LangSmithSummary } from "../data/types";
 import { useFilters } from "../filters";
@@ -177,6 +178,7 @@ export default function DashboardsPage() {
               <Kpi label="Latência p50" value={formatMs(state.data.totals.p50Ms)} />
               <Kpi label="Latência p95" value={formatMs(state.data.totals.p95Ms)} />
             </div>
+            <LangSmithSection state={langsmith} />
             <Surface contentClassName="p-4">
               <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))" }}>
               <BarChart title="Conversas por dia" points={state.data.byDay.map((day) => ({ label: day.day, value: day.conversations }))} format={String} />
@@ -231,7 +233,9 @@ export default function DashboardsPage() {
               }}
               truncated={state.data.truncated}
             />
-            <LangSmithSection state={langsmith} />
+            <Collapsible title="Como o ROI e o custo humano são calculados">
+              <RoiExplanation />
+            </Collapsible>
           </>
         )}
       </div>

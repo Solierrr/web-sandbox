@@ -4,7 +4,7 @@ import { Field, Notice } from "./components";
 import {
   DEFAULT_SCENARIOS,
   MAX_SCENARIO_USERS,
-  WEEKS_PER_MONTH,
+  DEFAULT_HUMAN_COST_USD,
   observedPremises,
   parsePositive,
   parseRate,
@@ -24,7 +24,7 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
   const [costText, setCostText] = useState<string | null>(null);
   const [convText, setConvText] = useState<string | null>(null);
   const [rateText, setRateText] = useState<string | null>(null);
-  const [humanText, setHumanText] = useState("");
+  const [humanText, setHumanText] = useState(String(DEFAULT_HUMAN_COST_USD));
   const [extra, setExtra] = useState<number[]>([]);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState("");
@@ -51,13 +51,6 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
     <Surface contentClassName="flex flex-col gap-4 p-4">
       <div className="flex flex-col gap-1">
         <h2 className="text-sm font-semibold">Simulação de custo por usuários semanais</h2>
-        <p className="text-xs opacity-70">
-          Custo semanal = usuários × conversas por usuário por semana × custo médio por conversa. O mês usa {WEEKS_PER_MONTH.toFixed(2).replace(".", ",")} semanas.
-          Considera só o custo que o histórico registra por conversa (as chamadas de LLM); hospedagem e outros serviços ficam de fora.
-        </p>
-        <p className="text-xs opacity-70">
-          Resolução é a conversa sem erro e com resposta do assistente. Custo por resolução = custo das conversas ÷ resoluções. ROI = (resoluções × custo de um atendimento humano − custo da IA) ÷ custo da IA.
-        </p>
       </div>
 
       <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
@@ -97,6 +90,13 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
             value={humanText}
             onChange={(event) => setHumanText(event.target.value)}
           />
+          {humanText !== String(DEFAULT_HUMAN_COST_USD) && (
+            <WhiteButton
+              description={`Voltar ao custo padrão de um atendimento humano (US$ ${DEFAULT_HUMAN_COST_USD.toFixed(2)})`}
+              content="Usar o padrão"
+              action={() => setHumanText(String(DEFAULT_HUMAN_COST_USD))}
+            />
+          )}
         </Field>
         {edited && (
           <div className="flex items-end">

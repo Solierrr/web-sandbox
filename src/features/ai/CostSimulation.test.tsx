@@ -132,16 +132,41 @@ describe("CostSimulation", () => {
     expect(within(scenario(100)!).getByText("160")).toBeTruthy();
     expect(within(scenario(1000)!).getByText("1.600")).toBeTruthy();
     expect(within(scenario(100)!).getByText("US$ 0.0625")).toBeTruthy();
-    expect(within(scenario(100)!).getByText("Informe o custo de um atendimento humano")).toBeTruthy();
+    // com o custo humano padrão (US$ 2,00): (160 x 2 - 10) / 10
+    expect(within(scenario(100)!).getByText("3100.0%")).toBeTruthy();
   });
 
-  it("calcula o ROI quando o custo de um atendimento humano é informado", () => {
+  it("o custo de um atendimento humano já vem preenchido com o padrão", () => {
     render(<CostSimulation basis={basisOf({ resolvedConversations: 32 })} />);
 
-    fireEvent.change(screen.getByLabelText("Custo de um atendimento humano"), { target: { value: "2" } });
+    expect((screen.getByLabelText("Custo de um atendimento humano") as HTMLInputElement).value).toBe("2");
+    expect(screen.queryByRole("button", { name: /Voltar ao custo padrão/ })).toBeNull();
+  });
 
-    expect(within(scenario(100)!).getByText("3100.0%")).toBeTruthy();
-    expect(within(scenario(100)!).queryByText("Informe o custo de um atendimento humano")).toBeNull();
+  it("calcula o ROI com o custo de um atendimento humano que for informado", () => {
+    render(<CostSimulation basis={basisOf({ resolvedConversations: 32 })} />);
+
+    fireEvent.change(screen.getByLabelText("Custo de um atendimento humano"), { target: { value: "4" } });
+
+    // (160 x 4 - 10) / 10
+    expect(within(scenario(100)!).getByText("6300.0%")).toBeTruthy();
+  });
+
+  it("depois de editar, dá para voltar ao custo padrão", () => {
+    render(<CostSimulation basis={basisOf({ resolvedConversations: 32 })} />);
+
+    fireEvent.change(screen.getByLabelText("Custo de um atendimento humano"), { target: { value: "13.5" } });
+    fireEvent.click(screen.getByRole("button", { name: "Voltar ao custo padrão de um atendimento humano (US$ 2.00)" }));
+
+    expect((screen.getByLabelText("Custo de um atendimento humano") as HTMLInputElement).value).toBe("2");
+  });
+
+  it("apagando o custo de um atendimento humano, o ROI volta a pedir o valor", () => {
+    render(<CostSimulation basis={basisOf({ resolvedConversations: 32 })} />);
+
+    fireEvent.change(screen.getByLabelText("Custo de um atendimento humano"), { target: { value: "" } });
+
+    expect(within(scenario(100)!).getByText("Informe o custo de um atendimento humano")).toBeTruthy();
   });
 
   it("muda as resoluções quando a taxa é editada e volta ao observado", () => {

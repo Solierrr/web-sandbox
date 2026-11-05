@@ -118,12 +118,166 @@ describe("PlaygroundPage", () => {
     expect(service.runDebug).toHaveBeenCalledTimes(1);
   });
 
-  it("a mensagem do usuário aparece no prompt mas não é editável", () => {
+  it("a mensagem do usuário da conversa, o prompt system e o prompt human são editáveis", () => {
     setPlaygroundRun(run());
     renderPage();
     fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
-    expect(screen.getAllByRole("textbox")).toHaveLength(1);
-    expect(screen.getByText("Prompt · human (não editável)")).toBeTruthy();
+    expect(screen.getAllByRole("textbox")).toHaveLength(3);
+    expect(screen.getByRole("textbox", { name: "Mensagem do usuário do nó" })).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "Prompt system do nó 1" })).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "Prompt human do nó 1" })).toBeTruthy();
+  });
+
+  it("a mensagem do usuário é editada no próprio bloco da conversa, sem uma segunda caixa de entrada", () => {
+    setPlaygroundRun(run());
+    renderPage();
+    expect(screen.getByText("Preciso de instalador")).toBeTruthy();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    const caixa = screen.getByRole("textbox", { name: "Mensagem do usuário do nó" }) as HTMLTextAreaElement;
+    expect(caixa.value).toBe("Preciso de instalador");
+    expect(screen.queryByRole("textbox", { name: /^Entrada/ })).toBeNull();
+    expect(screen.getAllByText("Preciso de instalador")).toHaveLength(1);
+  });
+
+  it("editar a mensagem do usuário envia userMessage ao serviço", async () => {
+    service.runDebug.mockResolvedValue(customOutcome("router", "ok"));
+    setPlaygroundRun(run());
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Mensagem do usuário do nó" }), { target: { value: "outra pergunta" } });
+    fireEvent.click(screen.getByRole("button", { name: "Executar apenas o nó router" }));
+    await waitFor(() => expect(service.runDebug).toHaveBeenCalled());
+    expect(service.runDebug.mock.calls[0][2].custom).toMatchObject({ node: "router", userMessage: "outra pergunta" });
+  });
+
+  it("sem editar a mensagem, não envia userMessage", async () => {
+    service.runDebug.mockResolvedValue(customOutcome("router", "ok"));
+    setPlaygroundRun(run());
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    fireEvent.click(screen.getByRole("button", { name: "Executar apenas o nó router" }));
+    await waitFor(() => expect(service.runDebug).toHaveBeenCalled());
+    expect(service.runDebug.mock.calls[0][2].custom.userMessage).toBeUndefined();
+  });
+
+  it("mensagem do usuário vazia é recusada sem chamar o serviço", () => {
+    setPlaygroundRun(run());
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Mensagem do usuário do nó" }), { target: { value: "   " } });
+    fireEvent.click(screen.getByRole("button", { name: "Executar apenas o nó router" }));
+    expect(screen.getByText(/não pode ficar vazia/)).toBeTruthy();
+    expect(service.runDebug).not.toHaveBeenCalled();
+  });
+
+  const conversaLonga = () => {
+    const history = [
+      { role: "user" as const, text: "o que voce faz ?" },
+      { role: "assistant" as const, text: "Sou o Agente Roteador da Solaria." },
+      { role: "user" as const, text: "o que a solaria é?" },
+      { role: "assistant" as const, text: "A Solaria é um marketplace B2B." },
+    ];
+    const prompt = [
+      { type: "system", content: "Você é o router" },
+      { type: "human", content: "o que voce faz ?" },
+      { type: "ai", content: "Sou o Agente Roteador da Solaria." },
+      { type: "human", content: "o que a solaria é?" },
+    ];
+    const no = {
+      ...node(1, "router", { message_count: 3, last_message: { type: "human", content: "o que a solaria é?" } }),
+      llm_calls: [{ model: "gpt", prompt, prompt_complete: true, completion: "x", tokens_in: 1, tokens_out: 1, latency_ms: 1, error: null }],
+    };
+    return run({ messages: history, outcome: { ...run().outcome, debug: { nodes: [no] } } as PlaygroundRun["outcome"] });
+  };
+
+  it("todas as mensagens anteriores da conversa são editáveis em cima, e o prompt não repete a conversa", () => {
+    setPlaygroundRun(conversaLonga());
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    expect(screen.getByRole("textbox", { name: "Mensagem 1 (usuário) do nó" })).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "Mensagem 2 (assistente) do nó" })).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "Mensagem do usuário do nó" })).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "Prompt system do nó 1" })).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "Prompt human do nó 1" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Prompt ai do nó 1" })).toBeNull();
+    expect(screen.getAllByRole("textbox")).toHaveLength(4);
+  });
+
+  it("a resposta final do turno aparece na conversa mas não é editável", () => {
+    setPlaygroundRun(conversaLonga());
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    expect(screen.getByText("A Solaria é um marketplace B2B.")).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: /Mensagem 4/ })).toBeNull();
+  });
+
+  it("editar uma mensagem anterior envia messages com a posição dela", async () => {
+    service.runDebug.mockResolvedValue(customOutcome("router", "ok"));
+    setPlaygroundRun(conversaLonga());
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Mensagem 2 (assistente) do nó" }), { target: { value: "Sou o assistente da Solaria." } });
+    fireEvent.click(screen.getByRole("button", { name: "Executar apenas o nó router" }));
+    await waitFor(() => expect(service.runDebug).toHaveBeenCalled());
+    const custom = service.runDebug.mock.calls[0][2].custom;
+    expect(custom.messages).toEqual([{ index: 1, content: "Sou o assistente da Solaria." }]);
+    expect(custom.userMessage).toBeUndefined();
+  });
+
+  it("editar a primeira mensagem do usuário e a última manda cada uma no campo certo", async () => {
+    service.runDebug.mockResolvedValue(customOutcome("router", "ok"));
+    setPlaygroundRun(conversaLonga());
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Mensagem 1 (usuário) do nó" }), { target: { value: "quem é você?" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Mensagem do usuário do nó" }), { target: { value: "o que é a Solaria?" } });
+    fireEvent.click(screen.getByRole("button", { name: "Executar apenas o nó router" }));
+    await waitFor(() => expect(service.runDebug).toHaveBeenCalled());
+    const custom = service.runDebug.mock.calls[0][2].custom;
+    expect(custom.messages).toEqual([{ index: 0, content: "quem é você?" }]);
+    expect(custom.userMessage).toBe("o que é a Solaria?");
+  });
+
+  it("mensagem anterior vazia é recusada sem chamar o serviço", () => {
+    setPlaygroundRun(conversaLonga());
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Mensagem 2 (assistente) do nó" }), { target: { value: "  " } });
+    fireEvent.click(screen.getByRole("button", { name: "Executar apenas o nó router" }));
+    expect(screen.getByText(/não pode ficar vazia/)).toBeTruthy();
+    expect(service.runDebug).not.toHaveBeenCalled();
+  });
+
+  it("se a posição das mensagens não bate com a do nó, só a última do usuário é editável", () => {
+    const base = conversaLonga();
+    const nos = base.outcome.ok && base.outcome.debug ? base.outcome.debug.nodes : [];
+    const semContagem = { ...nos[0], input: { last_message: { type: "human", content: "o que a solaria é?" } } };
+    setPlaygroundRun({ ...base, outcome: { ...base.outcome, debug: { nodes: [semContagem] } } } as PlaygroundRun);
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    expect(screen.getByRole("textbox", { name: "Mensagem do usuário do nó" })).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: /Mensagem 1/ })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: /Mensagem 2/ })).toBeNull();
+  });
+
+  it("aceita a resposta de um agente com sub-passo (nó + model) e atualiza os dois", async () => {
+    const llm = (completion: string) => ({ model: "gpt", prompt: [{ type: "system", content: "S" }, { type: "human", content: "oi" }], prompt_complete: true, completion, tokens_in: 1, tokens_out: 1, latency_ms: 1, error: null });
+    const original = [{ ...node(1, "especialista", { message: "oi" }), llm_calls: [] }, { ...node(2, "model", { message: "oi" }), llm_calls: [llm("antiga")] }];
+    service.runDebug.mockResolvedValue({
+      ok: true, status: 200, elapsed: 5, body: {},
+      debug: {
+        nodes: [{ ...node(1, "especialista", { message: "oi" }), llm_calls: [] }, { ...node(2, "model", { message: "oi" }), llm_calls: [llm("nova resposta")] }],
+        custom: { node: "especialista", stopped: true, overrides_applied: 0, next: ["router"] },
+      },
+    });
+    setPlaygroundRun(run({ outcome: { ...run().outcome, debug: { nodes: original } } as PlaygroundRun["outcome"] }));
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    fireEvent.click(screen.getByRole("button", { name: "Executar apenas o nó especialista" }));
+    await waitFor(() => expect(screen.getByText(/Só este nó foi executado/)).toBeTruthy());
+    expect(screen.queryByText(/debug\.custom ausente/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /MODEL/i }));
+    expect(screen.getByText("nova resposta")).toBeTruthy();
   });
 
   it("prompt cortado pelo serviço não pode ser editado", () => {
@@ -132,7 +286,7 @@ describe("PlaygroundPage", () => {
     setPlaygroundRun(cortado);
     renderPage();
     fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
-    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByRole("textbox", { name: /^Prompt/ })).toBeNull();
     expect(screen.getByText(/com dado pessoal mascarado/)).toBeTruthy();
   });
 

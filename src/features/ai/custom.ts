@@ -26,7 +26,36 @@ export function promptParts(prompt: unknown): PromptPart[] | null {
   return parts;
 }
 
-export const isEditable = (part: PromptPart) => part.editable ?? part.type === "system";
+// Mensagens system, human e ai do prompt podem ser editadas. Resultado de tool e
+// a mensagem do modelo que pediu uma tool carregam decisão de tool e ficam fora.
+const EDITABLE_PROMPT_TYPES = new Set(["system", "human", "ai", "prompt", "message"]);
+export const isEditable = (part: PromptPart) => part.editable ?? EDITABLE_PROMPT_TYPES.has(part.type);
+
+/**
+ * Posições da conversa mostrada no nó que o serviço consegue editar na entrada dele.
+ *
+ * A conversa mostrada inclui a resposta final do turno, que não faz parte da entrada do nó,
+ * então só vão até a última mensagem do usuário. As anteriores só são editáveis quando a
+ * posição bate com a da lista de mensagens do nó (`message_count` igual ao total até a última
+ * mensagem do usuário e sem resumo); senão só a última mensagem do usuário é editável.
+ */
+export function editableMessageIndexes(
+  input: unknown,
+  messages: { role: string; text: string }[],
+  hasSummary: boolean,
+): { indexes: number[]; lastIndex: number | null } {
+  const last = lastUserMessage(messages);
+  if (!last) return { indexes: [], lastIndex: null };
+  const count = input && typeof input === "object" ? (input as { message_count?: unknown }).message_count : undefined;
+  const aligned = !hasSummary && typeof count === "number" && count === last.index + 1;
+  return { indexes: aligned ? Array.from({ length: last.index + 1 }, (_, index) => index) : [last.index], lastIndex: last.index };
+}
+
+/** Última mensagem do usuário da conversa mostrada no nó: é a que o serviço troca em `userMessage`. */
+export function lastUserMessage(messages: { role: string; text: string }[]): { index: number; text: string } | null {
+  for (let index = messages.length - 1; index >= 0; index--) if (messages[index].role === "user") return { index, text: messages[index].text };
+  return null;
+}
 
 export function rebuildPrompt(original: unknown, contents: string[]): PromptPart[] {
   const parts = promptParts(original) ?? [];

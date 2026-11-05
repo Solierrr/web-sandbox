@@ -13,6 +13,31 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
+/** Seção pequena que abre e fecha. O conteúdo só é montado enquanto ela está aberta. */
+export function Collapsible({ title, children }: { title: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const panel = `collapsible-${title.replace(/\W+/g, "-").toLowerCase()}`;
+  return (
+    <div className="flex flex-col gap-2">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panel}
+        onClick={() => setOpen((current) => !current)}
+        className="flex w-fit cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-left text-xs font-normal underline opacity-60 hover:opacity-100 focus-visible:opacity-100"
+      >
+        <span aria-hidden="true">{open ? "▾" : "▸"}</span>
+        {title}
+      </button>
+      {open && (
+        <div id={panel} className="rounded-lg border border-black/10 p-3">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Json({ value }: { value: unknown }) {
   const text = formatJson(value);
   if (!text) return null;
