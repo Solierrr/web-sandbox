@@ -131,6 +131,66 @@ describe("telas de IA com dados de exemplo", () => {
     expect(screen.getByText("gpt-4o")).toBeTruthy();
   });
 
+  it("o LangSmith aparece logo abaixo dos cards de cima, antes dos gráficos", async () => {
+    render(
+      <MemoryRouter>
+        <DashboardsPage />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByText(/LangSmith · solaria-demo/)).toBeTruthy());
+    const lastTopCard = screen.getAllByText("Latência p95")[0];
+    const langsmith = screen.getByText(/LangSmith · solaria-demo/);
+    const charts = screen.getByText("Conversas por dia");
+
+    expect(lastTopCard.compareDocumentPosition(langsmith) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(langsmith.compareDocumentPosition(charts) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("a simulação de ROI continua visível e a explicação fica recolhida no fim da página", async () => {
+    render(
+      <MemoryRouter>
+        <DashboardsPage />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getAllByText("Latência p95").length).toBeGreaterThan(0));
+    const abrir = screen.getByRole("button", { name: /Como o ROI e o custo humano são calculados/ });
+    const simulacao = screen.getByText("Simulação de custo por usuários semanais");
+
+    expect(simulacao).toBeTruthy();
+    expect((screen.getByLabelText("Custo de um atendimento humano") as HTMLInputElement).value).toBe("2");
+    expect(abrir.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText(/ROI = \(resoluções/)).toBeNull();
+    // a setinha vem depois da simulação, no fim da página
+    expect(simulacao.compareDocumentPosition(abrir) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText("Por assistente").compareDocumentPosition(abrir) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    fireEvent.click(abrir);
+
+    expect(abrir.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText(/ROI = \(resoluções × custo de um atendimento humano − custo da IA\) ÷ custo da IA/)).toBeTruthy();
+    expect(screen.getByText(/Como o custo de um atendimento humano foi calculado/)).toBeTruthy();
+    expect(screen.getByText(/US\$ 1,73, arredondado para US\$ 2\.00/)).toBeTruthy();
+
+    fireEvent.click(abrir);
+
+    expect(screen.queryByText(/ROI = \(resoluções/)).toBeNull();
+  });
+
+  it("a explicação do custo humano cita as fontes com link", async () => {
+    render(
+      <MemoryRouter>
+        <DashboardsPage />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getAllByText("Latência p95").length).toBeGreaterThan(0));
+    fireEvent.click(screen.getByRole("button", { name: /Como o ROI e o custo humano são calculados/ }));
+
+    const links = screen.getAllByRole("link").map((link) => link.getAttribute("href") ?? "");
+    for (const dominio of ["salario.com.br", "valorfinal.com.br", "comm100.com", "gov.br", "gartner.com"]) {
+      expect(links.some((href) => href.includes(dominio))).toBe(true);
+    }
+  });
+
   it("quando o api-messenger traz só o ai-assistant, mostra os totais sem as tabelas por assistente e por modelo", async () => {
     const summary = await mockSource.langsmith({ environment: "QA", assistant: "", from: "2000-01-01", to: "2999-12-31" });
     vi.spyOn(mockSource, "langsmith").mockResolvedValue({ ...summary, byAssistant: [], byModel: [] });

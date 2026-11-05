@@ -136,12 +136,10 @@ describe("CostSimulation", () => {
     expect(within(scenario(100)!).getByText("3100.0%")).toBeTruthy();
   });
 
-  it("o custo de um atendimento humano já vem preenchido com o padrão e explica de onde vem", () => {
+  it("o custo de um atendimento humano já vem preenchido com o padrão", () => {
     render(<CostSimulation basis={basisOf({ resolvedConversations: 32 })} />);
 
     expect((screen.getByLabelText("Custo de um atendimento humano") as HTMLInputElement).value).toBe("2");
-    expect(screen.getByText(/Padrão: US\$ 2\.00/)).toBeTruthy();
-    expect(screen.getByText(/Gartner\): US\$ 13\.50/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Voltar ao custo padrão/ })).toBeNull();
   });
 

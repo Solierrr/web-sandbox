@@ -12,8 +12,8 @@ export const WEEKS_PER_MONTH = 52 / 12;
  *   ou seja, cerca de R$ 19 por hora paga;
  * - 55% de ocupação (a Comm100 cita 50 a 60% como bom) e 11 minutos por chat (Comm100):
  *   cerca de 3 atendimentos por hora paga, o que dá cerca de R$ 6,50 só de mão de obra;
- * - mais 40% de supervisão, ferramentas e treinamento (premissa nossa, sem fonte): R$ 9 a 10;
- * - ao câmbio de cerca de R$ 5,15 por dólar: US$ 1,90, arredondado para US$ 2,00.
+ * - mais 40% de supervisão, ferramentas e treinamento (premissa nossa, sem fonte): cerca de R$ 8,90;
+ * - ao câmbio de cerca de R$ 5,15 por dólar: US$ 1,73, arredondado para US$ 2,00.
  *
  * Conferência: a planilha de custos do MDS (gov.br) lista "Chat - Atendimento humano" a R$ 9,99
  * por unidade. É uma estimativa para um atendimento de chat simples: um atendimento técnico mais

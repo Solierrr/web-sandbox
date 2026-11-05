@@ -5,8 +5,6 @@ import {
   DEFAULT_SCENARIOS,
   MAX_SCENARIO_USERS,
   DEFAULT_HUMAN_COST_USD,
-  GARTNER_ASSISTED_CONTACT_USD,
-  WEEKS_PER_MONTH,
   observedPremises,
   parsePositive,
   parseRate,
@@ -53,13 +51,6 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
     <Surface contentClassName="flex flex-col gap-4 p-4">
       <div className="flex flex-col gap-1">
         <h2 className="text-sm font-semibold">Simulação de custo por usuários semanais</h2>
-        <p className="text-xs opacity-70">
-          Custo semanal = usuários × conversas por usuário por semana × custo médio por conversa. O mês usa {WEEKS_PER_MONTH.toFixed(2).replace(".", ",")} semanas.
-          Considera só o custo que o histórico registra por conversa (as chamadas de LLM); hospedagem e outros serviços ficam de fora.
-        </p>
-        <p className="text-xs opacity-70">
-          Resolução é a conversa sem erro e com resposta do assistente. Custo por resolução = custo das conversas ÷ resoluções. ROI = (resoluções × custo de um atendimento humano − custo da IA) ÷ custo da IA.
-        </p>
       </div>
 
       <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
@@ -99,11 +90,6 @@ export function CostSimulation({ basis, truncated = false }: { basis: CostBasis;
             value={humanText}
             onChange={(event) => setHumanText(event.target.value)}
           />
-          <span className="text-xs opacity-70">
-            Padrão: US$ {DEFAULT_HUMAN_COST_USD.toFixed(2)} (cerca de R$ 10) por atendimento. Estimativa para um atendente de chat/SAC no Brasil: salário médio
-            de R$ 1.800 com 1,7 de encargos, cerca de 3 atendimentos por hora e mais 40% de estrutura. Referência global (Gartner): US$ {GARTNER_ASSISTED_CONTACT_USD.toFixed(2)}.
-            Um atendimento técnico mais longo custa mais.
-          </span>
           {humanText !== String(DEFAULT_HUMAN_COST_USD) && (
             <WhiteButton
               description={`Voltar ao custo padrão de um atendimento humano (US$ ${DEFAULT_HUMAN_COST_USD.toFixed(2)})`}
