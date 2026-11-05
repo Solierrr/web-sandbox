@@ -118,12 +118,76 @@ describe("PlaygroundPage", () => {
     expect(service.runDebug).toHaveBeenCalledTimes(1);
   });
 
-  it("a mensagem do usuário aparece no prompt mas não é editável", () => {
+  it("a mensagem do usuário da conversa, o prompt system e o prompt human são editáveis", () => {
     setPlaygroundRun(run());
     renderPage();
     fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
-    expect(screen.getAllByRole("textbox")).toHaveLength(1);
-    expect(screen.getByText("Prompt · human (não editável)")).toBeTruthy();
+    expect(screen.getAllByRole("textbox")).toHaveLength(3);
+    expect(screen.getByRole("textbox", { name: "Mensagem do usuário do nó" })).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "Prompt system do nó 1" })).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: "Prompt human do nó 1" })).toBeTruthy();
+  });
+
+  it("a mensagem do usuário é editada no próprio bloco da conversa, sem uma segunda caixa de entrada", () => {
+    setPlaygroundRun(run());
+    renderPage();
+    expect(screen.getByText("Preciso de instalador")).toBeTruthy();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    const caixa = screen.getByRole("textbox", { name: "Mensagem do usuário do nó" }) as HTMLTextAreaElement;
+    expect(caixa.value).toBe("Preciso de instalador");
+    expect(screen.queryByRole("textbox", { name: /^Entrada/ })).toBeNull();
+    expect(screen.getAllByText("Preciso de instalador")).toHaveLength(1);
+  });
+
+  it("editar a mensagem do usuário envia userMessage ao serviço", async () => {
+    service.runDebug.mockResolvedValue(customOutcome("router", "ok"));
+    setPlaygroundRun(run());
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Mensagem do usuário do nó" }), { target: { value: "outra pergunta" } });
+    fireEvent.click(screen.getByRole("button", { name: "Executar apenas o nó router" }));
+    await waitFor(() => expect(service.runDebug).toHaveBeenCalled());
+    expect(service.runDebug.mock.calls[0][2].custom).toMatchObject({ node: "router", userMessage: "outra pergunta" });
+  });
+
+  it("sem editar a mensagem, não envia userMessage", async () => {
+    service.runDebug.mockResolvedValue(customOutcome("router", "ok"));
+    setPlaygroundRun(run());
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    fireEvent.click(screen.getByRole("button", { name: "Executar apenas o nó router" }));
+    await waitFor(() => expect(service.runDebug).toHaveBeenCalled());
+    expect(service.runDebug.mock.calls[0][2].custom.userMessage).toBeUndefined();
+  });
+
+  it("mensagem do usuário vazia é recusada sem chamar o serviço", () => {
+    setPlaygroundRun(run());
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Mensagem do usuário do nó" }), { target: { value: "   " } });
+    fireEvent.click(screen.getByRole("button", { name: "Executar apenas o nó router" }));
+    expect(screen.getByText(/não pode ficar vazia/)).toBeTruthy();
+    expect(service.runDebug).not.toHaveBeenCalled();
+  });
+
+  it("aceita a resposta de um agente com sub-passo (nó + model) e atualiza os dois", async () => {
+    const llm = (completion: string) => ({ model: "gpt", prompt: [{ type: "system", content: "S" }, { type: "human", content: "oi" }], prompt_complete: true, completion, tokens_in: 1, tokens_out: 1, latency_ms: 1, error: null });
+    const original = [{ ...node(1, "especialista", { message: "oi" }), llm_calls: [] }, { ...node(2, "model", { message: "oi" }), llm_calls: [llm("antiga")] }];
+    service.runDebug.mockResolvedValue({
+      ok: true, status: 200, elapsed: 5, body: {},
+      debug: {
+        nodes: [{ ...node(1, "especialista", { message: "oi" }), llm_calls: [] }, { ...node(2, "model", { message: "oi" }), llm_calls: [llm("nova resposta")] }],
+        custom: { node: "especialista", stopped: true, overrides_applied: 0, next: ["router"] },
+      },
+    });
+    setPlaygroundRun(run({ outcome: { ...run().outcome, debug: { nodes: original } } as PlaygroundRun["outcome"] }));
+    renderPage();
+    fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
+    fireEvent.click(screen.getByRole("button", { name: "Executar apenas o nó especialista" }));
+    await waitFor(() => expect(screen.getByText(/Só este nó foi executado/)).toBeTruthy());
+    expect(screen.queryByText(/debug\.custom ausente/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /MODEL/i }));
+    expect(screen.getByText("nova resposta")).toBeTruthy();
   });
 
   it("prompt cortado pelo serviço não pode ser editado", () => {
@@ -132,7 +196,7 @@ describe("PlaygroundPage", () => {
     setPlaygroundRun(cortado);
     renderPage();
     fireEvent.click(screen.getByRole("checkbox", { name: "Ativar execução personalizada?" }));
-    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByRole("textbox", { name: /^Prompt/ })).toBeNull();
     expect(screen.getByText(/com dado pessoal mascarado/)).toBeTruthy();
   });
 

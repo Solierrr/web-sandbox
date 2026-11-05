@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { OperationalPage, StatusField, Surface } from "@solaria.network/web-lib";
 import { Notice } from "../components";
-import { changedPrompts, draftKey, promptParts, type Drafts } from "../custom";
+import { changedPrompts, draftKey, lastUserMessage, promptParts, type Drafts } from "../custom";
+import { nodeConversation } from "../conversation";
 import { demoRerun } from "../data/mock";
 import { runDebug, type CustomRun, type DebugInput, type DebugOutcome } from "../debug.service";
 import { usePlaygroundRun, type PlaygroundRun } from "../playground";
@@ -19,6 +20,7 @@ function Steps({ run }: { run: PlaygroundRun }) {
   const debug = outcome.debug;
   const [enabled, setEnabled] = useState(false);
   const [drafts, setDrafts] = useState<Drafts>({});
+  const [inputDrafts, setInputDrafts] = useState<Record<number, string>>({});
   const [reran, setReran] = useState<Record<number, DebugNode>>({});
   const [next, setNext] = useState<Record<number, string[]>>({});
   const [busy, setBusy] = useState(false);
@@ -26,7 +28,7 @@ function Steps({ run }: { run: PlaygroundRun }) {
   const lastUser = [...run.messages].reverse().find((message) => message.role === "user")?.text ?? "";
   if (!debug || debug.nodes.length === 0) return <p className="text-sm opacity-70">O serviço não registrou passos neste turno.</p>;
 
-  function inputFor(node: string, occurrence: number, prompts: CustomRun["prompts"]): DebugInput | null {
+  function inputFor(node: string, occurrence: number, prompts: CustomRun["prompts"], extra: Pick<CustomRun, "userMessage" | "state"> = {}): DebugInput | null {
     const replay = run.replay;
     if (!replay) return null;
     switch (replay.kind) {
@@ -36,19 +38,19 @@ function Steps({ run }: { run: PlaygroundRun }) {
           conversationId: run.conversationId,
           message: lastUser,
           persona: replay.persona,
-          custom: { turn: replay.turn, node, occurrence, prompts },
+          custom: { turn: replay.turn, node, occurrence, prompts, ...extra },
         };
       case "certificates":
         return {
           kind: "certificates",
           nr10Url: replay.nr10Url,
           nr35Url: replay.nr35Url,
-          custom: { runId: replay.runId, node, occurrence, prompts },
+          custom: { runId: replay.runId, node, occurrence, prompts, ...extra },
         };
       case "cnpj":
-        return { kind: "cnpj", cnpj: replay.cnpj, custom: { node, occurrence: 0, prompts } };
+        return { kind: "cnpj", cnpj: replay.cnpj, custom: { node, occurrence: 0, prompts, ...extra } };
       case "image":
-        return { kind: "image-stage", custom: { runId: replay.runId, node, occurrence, prompts } };
+        return { kind: "image-stage", custom: { runId: replay.runId, node, occurrence, prompts, ...extra } };
     }
   }
 
@@ -56,12 +58,20 @@ function Steps({ run }: { run: PlaygroundRun }) {
     const original = debug?.nodes[nodeIndex];
     if (!original || busy) return;
     const prompts = changedPrompts(original, nodeIndex, drafts);
+    const shown = lastUserMessage(nodeConversation(original.input, run.messages).messages);
+    const draft = inputDrafts[nodeIndex];
+    if (draft !== undefined && draft.trim() === "") {
+      setError("A mensagem do usuário não pode ficar vazia.");
+      return;
+    }
+    const edits = { userMessage: draft !== undefined && shown && draft !== shown.text ? draft : undefined, state: undefined };
     const occurrence = debug?.nodes.slice(0, nodeIndex).filter((item) => item.node === original.node).length ?? 0;
     setBusy(true);
     setError("");
     let result: DebugNode | null = null;
     let following: string[] | undefined;
-    const input = run.demo ? null : inputFor(original.node, occurrence, prompts);
+    const extraReran: Record<number, DebugNode> = {};
+    const input = run.demo ? null : inputFor(original.node, occurrence, prompts, { userMessage: edits.userMessage, state: edits.state });
     if (run.demo) {
       result = demoRerun(original, prompts);
     } else if (!input) {
@@ -73,9 +83,14 @@ function Steps({ run }: { run: PlaygroundRun }) {
         const custom = response.debug?.custom as
           | { node?: unknown; stopped?: unknown; overrides_applied?: unknown; next?: unknown }
           | undefined;
-        const only = response.debug?.nodes;
-        if (custom?.node === original.node && custom.stopped === true && only?.length === 1) {
+        // O serviço devolve o nó e os sub-passos dele (ex.: "model" dentro de um agente).
+        const only = response.debug?.nodes ?? [];
+        if (custom?.node === original.node && custom.stopped === true && only[0]?.node === original.node) {
           result = only[0];
+          // Sub-passos seguem logo depois do nó no trace original: cada um substitui o da mesma posição.
+          only.slice(1).forEach((sub, offset) => {
+            if (debug?.nodes[nodeIndex + 1 + offset]?.node === sub.node) extraReran[nodeIndex + 1 + offset] = sub;
+          });
           if (Array.isArray(custom.next)) following = custom.next.map(String);
           if (prompts.length > 0 && custom.overrides_applied === 0)
             setError("O nó rodou, mas o serviço não encontrou onde aplicar o prompt editado (o prompt desta execução é outro).");
@@ -87,7 +102,7 @@ function Steps({ run }: { run: PlaygroundRun }) {
     }
     setBusy(false);
     if (result) {
-      setReran((previous) => ({ ...previous, [nodeIndex]: result }));
+      setReran((previous) => ({ ...previous, [nodeIndex]: result, ...extraReran }));
       setNext((previous) => ({ ...previous, [nodeIndex]: following ?? [] }));
     }
   }
@@ -125,10 +140,13 @@ function Steps({ run }: { run: PlaygroundRun }) {
             });
             return result;
           }),
+        inputDrafts,
+        onInputDraft: (nodeIndex, value) => setInputDrafts((previous) => ({ ...previous, [nodeIndex]: value })),
         onRun: runNode,
         onReset: (nodeIndex) => {
           setError("");
           setDrafts((previous) => Object.fromEntries(Object.entries(previous).filter(([key]) => !key.startsWith(`${nodeIndex}:`))));
+          setInputDrafts((previous) => Object.fromEntries(Object.entries(previous).filter(([key]) => Number(key) !== nodeIndex)));
           setReran((previous) => Object.fromEntries(Object.entries(previous).filter(([key]) => Number(key) !== nodeIndex)));
           setNext((previous) => Object.fromEntries(Object.entries(previous).filter(([key]) => Number(key) !== nodeIndex)));
         },

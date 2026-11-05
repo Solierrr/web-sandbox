@@ -26,7 +26,16 @@ export function promptParts(prompt: unknown): PromptPart[] | null {
   return parts;
 }
 
-export const isEditable = (part: PromptPart) => part.editable ?? part.type === "system";
+// Mensagens system, human e ai do prompt podem ser editadas. Resultado de tool e
+// a mensagem do modelo que pediu uma tool carregam decisão de tool e ficam fora.
+const EDITABLE_PROMPT_TYPES = new Set(["system", "human", "ai", "prompt", "message"]);
+export const isEditable = (part: PromptPart) => part.editable ?? EDITABLE_PROMPT_TYPES.has(part.type);
+
+/** Última mensagem do usuário da conversa mostrada no nó: é a que o serviço troca em `userMessage`. */
+export function lastUserMessage(messages: { role: string; text: string }[]): { index: number; text: string } | null {
+  for (let index = messages.length - 1; index >= 0; index--) if (messages[index].role === "user") return { index, text: messages[index].text };
+  return null;
+}
 
 export function rebuildPrompt(original: unknown, contents: string[]): PromptPart[] {
   const parts = promptParts(original) ?? [];

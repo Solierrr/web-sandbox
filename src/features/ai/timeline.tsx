@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Checkbox, PrimaryButton, Textarea, WhiteButton } from "@solaria.network/web-lib";
 import { Field, Json, Notice } from "./components";
 import { nodeConversation, type NodeConversation } from "./conversation";
-import { draftKey, isEditable, promptParts, type Drafts } from "./custom";
+import { draftKey, isEditable, lastUserMessage, promptParts, type Drafts } from "./custom";
 import type { PlaygroundMessage } from "./playground";
 import {
   formatMs,
@@ -32,6 +32,8 @@ export interface NodeEditor {
   error: string;
   demo?: boolean;
   onDraft: (nodeIndex: number, callIndex: number, partIndex: number, value: string, original: string[]) => void;
+  inputDrafts?: Record<number, string>;
+  onInputDraft?: (nodeIndex: number, value: string) => void;
   onRun: (nodeIndex: number) => void;
   onReset: (nodeIndex: number) => void;
 }
@@ -134,7 +136,14 @@ export function StepsView({ debug, userMessage, answer, agents, editor, history 
                   (editor.next[index].length > 0 ? ` O próximo nó seria: ${editor.next[index].join(", ")}.` : " Este era o último nó.")}
               </Notice>
             )}
-            <ConversationView conversation={nodeConversation(node.input, history)} />
+            <ConversationView
+              conversation={nodeConversation(node.input, history)}
+              editable={
+                editor?.enabled && !rerun && editor.onInputDraft && !editor.unavailable && !editor.blockedReason?.(node.node)
+                  ? { value: editor.inputDrafts?.[index], onChange: (value) => editor.onInputDraft?.(index, value) }
+                  : undefined
+              }
+            />
             <Field label="Entrada">
               <Json value={node.input} />
             </Field>
@@ -181,8 +190,8 @@ export function StepsView({ debug, userMessage, answer, agents, editor, history 
                 {editor.enabled && (
                   <>
                     <p className="text-xs opacity-70">
-                      Edite os prompts acima e use "Executar": o serviço roda apenas este nó, com o que os nós anteriores já produziram, e para nele, sem
-                      passar para o próximo.
+                      Edite a mensagem do usuário e os prompts acima (system, human e ai) e use "Executar": o serviço roda apenas este nó, com o que os nós anteriores
+                      já produziram, e para nele, sem passar para o próximo. A saída do nó e a escolha de qual tool chamar continuam sendo do serviço.
                     </p>
                     {editor.error && <Notice tone="error">{editor.error}</Notice>}
                     <div className="flex flex-wrap gap-3">
@@ -192,7 +201,7 @@ export function StepsView({ debug, userMessage, answer, agents, editor, history 
                         disabled={editor.busy}
                         action={() => editor.onRun(index)}
                       />
-                      {(rerun || Object.keys(editor.drafts).some((key) => key.startsWith(`${index}:`))) && (
+                      {(rerun || editor.inputDrafts?.[index] !== undefined || Object.keys(editor.drafts).some((key) => key.startsWith(`${index}:`))) && (
                         <WhiteButton description="Voltar ao prompt e ao resultado originais" content="Restaurar original" disabled={editor.busy} action={() => editor.onReset(index)} />
                       )}
                     </div>
@@ -254,8 +263,15 @@ function PromptEditor({ editor, nodeIndex, callIndex, prompt }: { editor: NodeEd
   );
 }
 
-function ConversationView({ conversation }: { conversation: NodeConversation }) {
+function ConversationView({
+  conversation,
+  editable,
+}: {
+  conversation: NodeConversation;
+  editable?: { value: string | undefined; onChange: (value: string) => void };
+}) {
   if (!conversation.summary && conversation.messages.length === 0) return null;
+  const editing = editable ? lastUserMessage(conversation.messages) : null;
   return (
     <Field label={conversation.summary ? "Conversa (resumida)" : "Conversa"}>
       <div className="flex flex-col gap-2">
@@ -265,7 +281,19 @@ function ConversationView({ conversation }: { conversation: NodeConversation }) 
             <p className="m-0 whitespace-pre-wrap text-sm">{conversation.summary}</p>
           </div>
         )}
-        {conversation.messages.map((message, position) => (
+        {conversation.messages.map((message, position) =>
+          editable && editing?.index === position ? (
+            <div key={position} className="flex flex-col gap-1 rounded-lg border-l-4 border-[#FF6500] bg-black/5 px-3 py-2">
+              <span className="block text-xs font-bold uppercase tracking-wide opacity-70">Usuário (editável)</span>
+              <Textarea
+                name={`Mensagem do usuário do nó`}
+                className="w-full"
+                rows={Math.min(10, Math.max(2, (editable.value ?? message.text).split("\n").length))}
+                value={editable.value ?? message.text}
+                onChange={(event) => editable.onChange(event.target.value)}
+              />
+            </div>
+          ) : (
           <p
             key={position}
             className={`m-0 whitespace-pre-wrap rounded-lg px-3 py-2 text-sm ${message.role === "user" ? "border-l-4 border-[#FF6500] bg-black/5" : "bg-black/5"}`}
@@ -273,7 +301,8 @@ function ConversationView({ conversation }: { conversation: NodeConversation }) 
             <span className="block text-xs font-bold uppercase tracking-wide opacity-70">{message.role === "user" ? "Usuário" : "Assistente"}</span>
             {message.text}
           </p>
-        ))}
+          ),
+        )}
       </div>
     </Field>
   );
