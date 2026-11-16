@@ -1,4 +1,4 @@
-import { getSession, getSessionGeneration, refresh } from "../access/access.service";
+import { getSession, getSessionGeneration, refresh, restoreSession } from "../access/access.service";
 import services from "../../../shared/qa-services.json";
 
 const tabs = new Map<Window, string>();
@@ -6,6 +6,7 @@ let cleanup: ReturnType<typeof setInterval> | undefined;
 
 export async function accessToken() {
   let session = getSession();
+  if (!session) { await restoreSession(); session = getSession(); }
   if (!session || session.mock) throw new Error("Entre com uma conta de QA no sandbox para testar as APIs reais.");
   const generation = getSessionGeneration();
   if (Date.parse(session.accessTokenExpiresAt) - Date.now() < 30000) {
@@ -17,10 +18,18 @@ export async function accessToken() {
 }
 
 export async function answerSwagger(event: MessageEvent) {
-  if (event.origin !== window.location.origin || !event.source || !tabs.has(event.source as Window)) return;
+  if (event.origin !== window.location.origin || !event.source) return;
   const { type, id, requestId } = event.data ?? {};
-  if (type !== "solaria-swagger-auth" || id !== tabs.get(event.source as Window) || typeof requestId !== "string" || requestId.length > 100) return;
+  if (type !== "solaria-swagger-auth" || typeof requestId !== "string" || requestId.length > 100) return;
   const source = event.source as Window;
+  if (!tabs.has(source)) {
+    // A referência da aba filha continua válida quando o catálogo é recarregado.
+    try {
+      if (source.opener !== window || source.location.pathname !== "/swagger.html" || new URLSearchParams(source.location.search).get("service") !== id || !services.some(service => service.id === id)) return;
+      trackTab(source, id);
+    } catch { return; }
+  }
+  if (id !== tabs.get(source)) return;
   try {
     const generation = getSessionGeneration();
     const token = await accessToken();
@@ -35,16 +44,20 @@ export function openSwagger(id: string) {
   if (!services.some(service => service.id === id)) throw new Error("Serviço não encontrado.");
   const tab = window.open(`/swagger.html?service=${encodeURIComponent(id)}`, "_blank");
   if (!tab) throw new Error("Permita abrir uma nova aba para acessar o Swagger.");
+  trackTab(tab, id);
+}
+
+function trackTab(tab: Window, id: string) {
   tabs.set(tab, id);
   if (!cleanup) {
-    window.addEventListener("message", answerSwagger);
     cleanup = setInterval(() => {
       for (const tab of tabs.keys()) if (tab.closed) tabs.delete(tab);
       if (!tabs.size) {
         clearInterval(cleanup);
         cleanup = undefined;
-        window.removeEventListener("message", answerSwagger);
       }
     }, 5000);
   }
 }
+
+window.addEventListener("message", answerSwagger);

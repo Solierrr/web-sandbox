@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import { verifyQaToken } from "./portal/portal.auth.js";
 import { boundedBody, PortalError, portalSpec, services, targetUrl, upstreamHeaders } from "./portal/portal.service.js";
+import { probeService } from "./portal/portal.wake.js";
 
 export function createApp(options: { verify?: (token: string) => Promise<void>; fetch?: typeof fetch } = {}) {
   const app = Fastify({ bodyLimit: 10 * 1024 * 1024, logger: false });
@@ -21,6 +22,11 @@ export function createApp(options: { verify?: (token: string) => Promise<void>; 
       catch { throw new PortalError(401, "Sessão inválida ou expirada. Entre novamente."); }
     });
     portal.get("/services", async () => services.map(({ id }) => ({ id })));
+    portal.post<{ Params: { id: string } }>("/:id/wake", async request => {
+      const result = await probeService(request.params.id, upstream);
+      if (!result) throw new PortalError(404, "Serviço não encontrado.");
+      return result;
+    });
     portal.get<{ Params: { id: string } }>("/:id/spec", async (request, reply) => {
       const service = services.find(s => s.id === request.params.id);
       if (!service) throw new PortalError(404, "Serviço não encontrado.");

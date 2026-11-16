@@ -16,7 +16,7 @@ describe("QA portal", () => {
     expect((await app.inject("/api/qa/api-email/spec")).statusCode).toBe(401);
     expect((await app.inject({ url: "/api/qa/api-email/spec", headers: { authorization: "Bearer mock-access-123" } })).statusCode).toBe(401);
     expect(upstream).not.toHaveBeenCalled();
-  });
+  }, 20000); // Inclui a primeira inicialização do Fastify em execução fria.
   it("allows every valid QA account without requiring an admin role", async () => {
     const app = setup(vi.fn());
     expect((await app.inject({ url: "/api/qa/services", headers: auth })).statusCode).toBe(200);

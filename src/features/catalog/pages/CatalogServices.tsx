@@ -1,6 +1,7 @@
 import { useCallback, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { GitHubIcon, MenuItem, MenuList, Surface, type ServiceListItem, type ServiceListLink } from "@solaria.network/web-lib";
+import { openRenderService } from "../catalog.redirect.service";
 
 interface CatalogAction extends ServiceListLink {
   copyText?: string;
@@ -103,7 +104,7 @@ function CatalogLinkMenu({ name, links, access }: { name: string; links: Catalog
   }
 
   if (access?.direct && links.length === 1 && links[0].href) {
-    return <a href={links[0].href} target="_blank" rel="noopener noreferrer" aria-label={`${label} (abre em nova aba)`} title={label} className={triggerClasses}><span aria-hidden="true" className={glyphClasses}>{icon}</span></a>;
+    return <a href={links[0].href} onClick={event => { if (new URL(links[0].href!, window.location.origin).hostname.endsWith(".onrender.com") && /^(api-|ai-|mcp-)/.test(name)) { event.preventDefault(); void openRenderService(links[0].href!, name); } }} target="_blank" rel="noopener noreferrer" aria-label={`${label} (abre em nova aba)`} title={label} className={triggerClasses}><span aria-hidden="true" className={glyphClasses}>{icon}</span></a>;
   }
 
   return (
@@ -135,6 +136,7 @@ function CatalogLinkMenu({ name, links, access }: { name: string; links: Catalog
               onSelect={() => {
                 if (link.copyText) void navigator.clipboard.writeText(link.copyText);
                 else if (link.onSelect) link.onSelect();
+                else if (link.href && new URL(link.href, window.location.origin).hostname.endsWith(".onrender.com") && /^(api-|ai-|mcp-)/.test(name)) void openRenderService(link.href, name);
                 else if (link.href) window.open(link.href, "_blank", "noopener,noreferrer");
                 close();
               }}
